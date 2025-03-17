@@ -85,8 +85,8 @@ def main():
                                         matplotlib=True, 
                                         show=False)
 
-            st.pyplot(force_fig, use_container_width=True)
-            
+            st.altair_chart(force_fig, use_container_width=True)
+
             st.write('---')
 
             st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
