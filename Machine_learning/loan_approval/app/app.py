@@ -10,7 +10,7 @@ import joblib
 
 # loading the model
 try:
-    model = joblib.load('/app/model_lgbm.pkl')
+    model = joblib.load('Machine_learning/loan_approval/app/model_lgbm.pkl')
 except Exception as e:
     st.error(f'An error occured: {e}')
     st.stop()
