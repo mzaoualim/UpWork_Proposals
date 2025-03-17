@@ -81,7 +81,7 @@ def main():
 
             st.write(shap_values)
 
-            st.pyplot(shap.force_plot(shap_values[0]))  
+            shap.force_plot(shap_values[0])
             # st_shap(shap.plots.waterfall(shap_values[0]), height=300, width=1000)    
             st.write('---')
 
