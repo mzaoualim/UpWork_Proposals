@@ -6,4 +6,3 @@ lightgbm
 joblib
 streamlit
 shap
-streamlit_shap

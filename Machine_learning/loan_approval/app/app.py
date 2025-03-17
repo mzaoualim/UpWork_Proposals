@@ -1,6 +1,6 @@
 import streamlit as st
 import shap
-from streamlit_shap import st_shap
+# from streamlit_shap import st_shap
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
