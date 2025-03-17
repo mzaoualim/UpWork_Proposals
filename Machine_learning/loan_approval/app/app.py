@@ -13,7 +13,7 @@ try:
     model = joblib.load('Machine_learning/loan_approval/app/model_lgbm.pkl')
 except Exception as e:
     st.error(f'An error occured: {e}')
-    st.stop()
+    # st.stop()
 
 def main():
     st.markdown("<h2 style='text-align: center;'> INPUTS </h2>", unsafe_allow_html=True)
