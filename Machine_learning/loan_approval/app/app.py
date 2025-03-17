@@ -76,7 +76,7 @@ def main():
             st.write('---')
 
             st.markdown("<h2 style='text-align: center;'> SHAP </h2>", unsafe_allow_html=True)
-            explainer = shap.Explainer(model, input_df)
+            explainer = shap.Explainer(model)
             shap_values = explainer(input_df)
 
             st_shap(shap.plots.waterfall(shap_values[0]), height=300)
