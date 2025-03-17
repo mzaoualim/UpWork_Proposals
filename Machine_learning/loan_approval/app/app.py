@@ -85,7 +85,7 @@ def main():
                                         matplotlib=True, 
                                         show=False)
 
-            st.plotly_chart(force_fig, use_container_width=True)
+            st.pyplot(force_fig, use_container_width=True)
 
             st.write('---')
 
