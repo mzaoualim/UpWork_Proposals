@@ -79,19 +79,18 @@ def main():
             explainer = shap.TreeExplainer(model)
             shap_values = explainer(input_df)
 
-            st.write(shap_values)
-
             force_fig = shap.force_plot(shap_values.base_values[0], 
                                         shap_values.values[0],
                                         input_df.columns,
                                         matplotlib=True, 
                                         show=False)
-            # force_fig.set_size_inches(2, 10)
 
             st.pyplot(force_fig, use_container_width=True)
             st.write('---')
 
             st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
+            st.write(input_data)
+            st.write(shap_values)
             st.write('---')
 
 
