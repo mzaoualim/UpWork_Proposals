@@ -79,7 +79,7 @@ def main():
             explainer = shap.TreeExplainer(model, feature_perturbation="tree_path_dependent")
             shap_values = explainer(input_df)
 
-            st_shap(shap.plots.waterfall(shap_values[0]))
+            st.write(shap.plots.waterfall(shap_values[0]))
             st.write('---')
 
             st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
