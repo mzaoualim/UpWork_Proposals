@@ -85,7 +85,7 @@ def main():
                                         matplotlib=True, 
                                         show=False)
 
-            st.altair_chart(force_fig, use_container_width=True)
+            st.plotly_chart(force_fig, use_container_width=True)
 
             st.write('---')
 
