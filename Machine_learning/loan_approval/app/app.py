@@ -81,8 +81,14 @@ def main():
 
             st.write(shap_values)
 
-            shap.force_plot(shap_values[0])
-            # st_shap(shap.plots.waterfall(shap_values[0]), height=300, width=1000)    
+            force_fig = shap.force_plot(shap_values.base_values[0], 
+                                        shap_values.values[0],
+                                        shap_values.data[0],
+                                        matplotlib=True, 
+                                        show=False)
+            force_fig.set_size_inches(2, 10)
+            
+            st.pyplot(force_fig)
             st.write('---')
 
             st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
