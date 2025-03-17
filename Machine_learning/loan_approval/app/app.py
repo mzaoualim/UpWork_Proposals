@@ -33,11 +33,11 @@ def main():
             cb_person_default_on_file = st.selectbox('Previous Default', ['Y', 'N'])
 
         with c2:
-            loan_amnt = st.number_input('Loan Amount', min_value=0, value=0)
+            loan_amnt = st.number_input('Loan Amount', min_value=0, value=10000)
             loan_grade = st.selectbox('Loan Grade', ['A', 'B', 'C', 'D', 'E', 'F', 'G'])
 
         with c3:
-            cb_person_cred_hist_length = st.number_input('Credit History Length', min_value=0, value=0)
+            cb_person_cred_hist_length = st.number_input('Credit History Length', min_value=0, value=7)
             person_home_ownership = st.selectbox('Home Ownership', ['RENT', 'MORTGAGE', 'OWN', 'OTHER'])
 
         with c4:
@@ -80,7 +80,7 @@ def main():
             shap_values = explainer(input_df)
 
             # st_shap(shap.force_plot(shap_values[0]), height=200, width=1000)  
-            st_shap(shap.plots.beeswarm(shap_values[0]), height=300, width=1000)          
+            st_shap(shap.plots.beeswarm(shap_values), height=300, width=1000)    
             st.write('---')
 
             st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
