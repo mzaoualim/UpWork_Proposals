@@ -1,7 +1,7 @@
 pandas
 matplotlib
 shap
+streamlit_shap
 lightgbm
 joblib
 streamlit
-shap
