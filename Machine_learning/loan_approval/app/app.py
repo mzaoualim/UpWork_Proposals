@@ -83,7 +83,7 @@ def main():
 
             force_fig = shap.force_plot(shap_values.base_values[0], 
                                         shap_values.values[0],
-                                        input_data.columns,
+                                        input_data.keys(),
                                         matplotlib=True, 
                                         show=False)
             # force_fig.set_size_inches(2, 10)
