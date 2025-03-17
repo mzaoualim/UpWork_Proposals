@@ -81,8 +81,8 @@ def main():
 
             st.write(shap_values)
 
-            # st_shap(shap.force_plot(shap_values[0]), height=200, width=1000)  
-            st_shap(shap.plots.waterfall(shap_values[0]), height=300, width=1000)    
+            st_shap(shap.force_plot(shap_values[0]), height=200, width=1000)  
+            # st_shap(shap.plots.waterfall(shap_values[0]), height=300, width=1000)    
             st.write('---')
 
             st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
