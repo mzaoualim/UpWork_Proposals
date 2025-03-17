@@ -86,9 +86,9 @@ def main():
                                         shap_values.data[0],
                                         matplotlib=True, 
                                         show=False)
-            force_fig.set_size_inches(2, 10)
-            
-            st.pyplot(force_fig)
+            # force_fig.set_size_inches(2, 10)
+
+            st.pyplot(force_fig, use_container_width=True)
             st.write('---')
 
             st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
