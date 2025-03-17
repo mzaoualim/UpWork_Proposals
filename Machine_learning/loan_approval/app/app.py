@@ -79,6 +79,8 @@ def main():
             explainer = shap.TreeExplainer(model)
             shap_values = explainer(input_df)
 
+            st.write(shap_values)
+
             # st_shap(shap.force_plot(shap_values[0]), height=200, width=1000)  
             st_shap(shap.plots.waterfall(shap_values[0]), height=300, width=1000)    
             st.write('---')
