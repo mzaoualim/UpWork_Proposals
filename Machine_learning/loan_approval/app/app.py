@@ -84,7 +84,7 @@ def main():
                                         input_df.columns,
                                         matplotlib=True, 
                                         show=False)
-            fig = shap.plots.waterfall(shap_values[0])
+            fig = shap.plots.waterfall(shap_values[0],matplotlib=True, show=False)
 
             st.pyplot(force_fig, use_container_width=True)
             st.pyplot(fig, use_container_width=True)
