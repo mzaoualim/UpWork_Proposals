@@ -38,11 +38,11 @@ def llm_commentator(decision, shap_values):
     )
 
     # Gemini API details: ensure you update api_url, headers, and payload based on the documentation.
-    api_url = "https://api.gemini.ai/v1/complete"  # Replace with the correct endpoint
+    api_key = 'AIzaSyAvouBeid1dAU9v2AGtW3ykZ9uT1Pn4QII'
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"  # Replace with the correct endpoint
 
     # Retrieve your API key from environment variables for security.
     # api_key = os.getenv("GEMINI_API_KEY")
-    api_key = 'AIzaSyAvouBeid1dAU9v2AGtW3ykZ9uT1Pn4QII'
 
     headers = {
         "Authorization": f"Bearer {api_key}",
