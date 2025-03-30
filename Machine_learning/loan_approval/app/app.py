@@ -125,7 +125,7 @@ def main():
 
             st.write('---')
 
-            st.markdown("<h2 style='text-align: center;'> EXPLAINATIONS </h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center;'> EXPLANATIONS </h2>", unsafe_allow_html=True)
             comment = llm_commentator(result, input_data, shap_values)
             st.write(comment)
             st.write('---')
