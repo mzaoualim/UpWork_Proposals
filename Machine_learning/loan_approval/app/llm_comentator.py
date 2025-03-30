@@ -25,7 +25,7 @@ def llm_commentator(decision, shap_values):
 
     # Retrieve your API key from environment variables for security.
     # api_key = os.getenv("GEMINI_API_KEY")
-    api_key = 'AIzaSyCz0wrw5NWmdTSfMjOrHk2jZUS8ybN-3uo'
+    api_key = 'AIzaSyAvouBeid1dAU9v2AGtW3ykZ9uT1Pn4QII'
 
     headers = {
         "Authorization": f"Bearer {api_key}",
