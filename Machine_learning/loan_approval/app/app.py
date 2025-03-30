@@ -64,11 +64,12 @@ def llm_commentator(decision, shap_values):
         contents=prompt
         )
 
-    if response.status_code == 200:
-        # Adjust key names based on the actual response format from Gemini API.
-        return response.json().get("completion", "No explanation provided.")
-    else:
-        return f"Error generating explanation (status code {response.status_code})."
+    # if response.status_code == 200:
+    #     # Adjust key names based on the actual response format from Gemini API.
+    #     return response.json().get("completion", "No explanation provided.")
+    # else:
+    #     return f"Error generating explanation (status code {response.status_code})."
+    return response.text
 
 def main():
     st.markdown("<h2 style='text-align: center;'> INPUTS </h2>", unsafe_allow_html=True)
