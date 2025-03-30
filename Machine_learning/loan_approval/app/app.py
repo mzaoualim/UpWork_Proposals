@@ -10,6 +10,7 @@ import joblib
 import os
 import json
 import requests
+from google import genai
 
 # loading the model
 try:
@@ -33,30 +34,35 @@ def llm_commentator(decision, shap_values):
     # Customize the prompt style as needed.
     prompt = (
         f"Explain in simple terms why the loan was {decision.lower()} "
+        f"given the following features inputs: {input_data}. "
         f"given the following SHAP values: {shap_values}. "
         f"Focus on the most influential factors affecting the decision."
     )
 
     # Gemini API details: ensure you update api_url, headers, and payload based on the documentation.
     api_key = 'AIzaSyAvouBeid1dAU9v2AGtW3ykZ9uT1Pn4QII'
-    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"  # Replace with the correct endpoint
+    client = genai.Client(api_key)
 
     # Retrieve your API key from environment variables for security.
     # api_key = os.getenv("GEMINI_API_KEY")
 
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+    # headers = {
+    #     "Authorization": f"Bearer {api_key}",
+    #     "Content-Type": "application/json"
+    # }
 
-    payload = {
-        "prompt": prompt,
-        "max_tokens": 100,       # adjust max tokens as needed
-        "temperature": 0.7,      # adjust temperature for creativity vs. consistency
-        "top_p": 0.9             # adjust top_p for sampling
-    }
+    # payload = {
+    #     "prompt": prompt,
+    #     "max_tokens": 100,       # adjust max tokens as needed
+    #     "temperature": 0.7,      # adjust temperature for creativity vs. consistency
+    #     "top_p": 0.9             # adjust top_p for sampling
+    # }
 
-    response = requests.post(api_url, headers=headers, data=json.dumps(payload))
+    # response = requests.post(api_url, headers=headers, data=json.dumps(payload))
+    response  = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt
+        )
 
     if response.status_code == 200:
         # Adjust key names based on the actual response format from Gemini API.
