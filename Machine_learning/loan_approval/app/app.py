@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import lightgbm as lgb
 import joblib
+import llm_commentator
 
 # loading the model
 try:
@@ -90,8 +91,10 @@ def main():
             st.write('---')
 
             st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
+            comment = llm_commentator(result, shap_values)
             st.write(input_data)
             st.write(shap_values)
+            st.write(comment)
             st.write('---')
 
 
