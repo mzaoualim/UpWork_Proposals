@@ -20,7 +20,7 @@ except Exception as e:
     # st.stop()
 
 # llm commentator
-def llm_commentator(decision, shap_values):
+def llm_commentator(decision, input_data, shap_values):
     """
     Call Gemini's text generation API to get an explanation comment
     Parameters:
