@@ -7,4 +7,4 @@
 * Tune hyperparameters for a tree-based model.
 * Evaluate the model and save the best version.
 
-## Additionnally, a [Streamlit Web Application](https://loans-approval.streamlit.app/) is provided to allow users to experiment with different inputs. It displays the corresponding SHAP values along with detailed commentary powered by Gemini AI.
+## Additionally, a [Streamlit Web Application](https://loans-approval.streamlit.app/) is provided to allow users to experiment with different inputs. It displays the corresponding SHAP values along with detailed commentary powered by Gemini AI.
