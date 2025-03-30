@@ -19,12 +19,15 @@ except Exception as e:
     st.error(f'An error occured: {e}')
     # st.stop()
 
+key = st.secrets["GEMINI_API_KEY"]
+
 # llm commentator
 def llm_commentator(decision, input_data, shap_values):
     """
     Call Gemini's text generation API to get an explanation comment
     Parameters:
     decision (str): The model's decision ("Approved" or "Denied")
+    input_data (dict/str) : user input 
     shap_values (dict/str): SHAP values information (could be a dict or formatted string)
 
     Returns:
@@ -40,35 +43,12 @@ def llm_commentator(decision, input_data, shap_values):
     )
 
     # Gemini API details: ensure you update api_url, headers, and payload based on the documentation.
-    key = 'AIzaSyAvouBeid1dAU9v2AGtW3ykZ9uT1Pn4QII'
     client = genai.Client(api_key=key)
 
-    # Retrieve your API key from environment variables for security.
-    # api_key = os.getenv("GEMINI_API_KEY")
-
-    # headers = {
-    #     "Authorization": f"Bearer {api_key}",
-    #     "Content-Type": "application/json"
-    # }
-
-    # payload = {
-    #     "prompt": prompt,
-    #     "max_tokens": 100,       # adjust max tokens as needed
-    #     "temperature": 0.7,      # adjust temperature for creativity vs. consistency
-    #     "top_p": 0.9             # adjust top_p for sampling
-    # }
-
-    # response = requests.post(api_url, headers=headers, data=json.dumps(payload))
     response  = client.models.generate_content(
         model="gemini-2.0-flash",
         contents=prompt
         )
-
-    # if response.status_code == 200:
-    #     # Adjust key names based on the actual response format from Gemini API.
-    #     return response.json().get("completion", "No explanation provided.")
-    # else:
-    #     return f"Error generating explanation (status code {response.status_code})."
     return response.text
 
 def main():
@@ -147,8 +127,6 @@ def main():
 
             st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
             comment = llm_commentator(result, input_data, shap_values)
-            # st.write(input_data)
-            # st.write(shap_values)
             st.write(comment)
             st.write('---')
 
