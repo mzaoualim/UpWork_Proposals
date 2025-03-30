@@ -27,7 +27,7 @@ def llm_commentator(decision, input_data, shap_values):
     Call Gemini's text generation API to get an explanation comment
     Parameters:
     decision (str): The model's decision ("Approved" or "Denied")
-    input_data (dict/str) : user input 
+    input_data (dict) : user input (a dict)
     shap_values (dict/str): SHAP values information (could be a dict or formatted string)
 
     Returns:
