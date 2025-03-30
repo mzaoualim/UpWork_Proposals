@@ -106,12 +106,12 @@ def main():
             result = 'Approved' if prediction[0] == 1 else 'Denied'
             st.write('---')
             
-            st.markdown("<h2 style='text-align: center;'> OUTPUT </h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center;'> DECISION </h2>", unsafe_allow_html=True)
 
             st.success('Your requested loan is {}'.format(result))
             st.write('---')
 
-            st.markdown("<h2 style='text-align: center;'> SHAP </h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center;'> SHAP VALUES </h2>", unsafe_allow_html=True)
             explainer = shap.TreeExplainer(model)
             shap_values = explainer(input_df)
 
@@ -125,19 +125,10 @@ def main():
 
             st.write('---')
 
-            st.markdown("<h2 style='text-align: center;'> LLM COMMENT </h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center;'> EXPLAINATIONS </h2>", unsafe_allow_html=True)
             comment = llm_commentator(result, input_data, shap_values)
             st.write(comment)
             st.write('---')
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
