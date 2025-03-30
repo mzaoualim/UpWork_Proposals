@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import lightgbm as lgb
 import joblib
-import llm_commentator
+import llm_commentator.py
 
 # loading the model
 try:
