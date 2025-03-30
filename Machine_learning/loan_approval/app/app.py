@@ -52,7 +52,7 @@ def llm_commentator(decision, input_data, shap_values):
     return response.text
 
 def main():
-    st.markdown("<h1 style='text-align: center;'> PREDICT AND PROVIDE INSIGHTS ON LOAN DECISIONS </h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center;'> PREDICT AND PROVIDE INSIGHTS ON LOAN APPROVAL DECISIONS </h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'> INPUTS </h2>", unsafe_allow_html=True)
 
     with st.form(key='loan_form'):
