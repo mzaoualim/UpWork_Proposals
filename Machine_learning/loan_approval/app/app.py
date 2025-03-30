@@ -40,8 +40,8 @@ def llm_commentator(decision, input_data, shap_values):
     )
 
     # Gemini API details: ensure you update api_url, headers, and payload based on the documentation.
-    api_key = 'AIzaSyAvouBeid1dAU9v2AGtW3ykZ9uT1Pn4QII'
-    client = genai.Client(api_key)
+    key = 'AIzaSyAvouBeid1dAU9v2AGtW3ykZ9uT1Pn4QII'
+    client = genai.Client(api_key=key)
 
     # Retrieve your API key from environment variables for security.
     # api_key = os.getenv("GEMINI_API_KEY")
