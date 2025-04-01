@@ -132,7 +132,7 @@ def main():
                     st.write(strength)
                     break
                 continue
-            ast.write('Unable to determine the Jaw Strength \n The computed Jaw ratio is located outside the domaine knowledge range\n')
+            st.write('Unable to determine the Jaw Strength \n The computed Jaw ratio is located outside the domaine knowledge range\n')
 
             # st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
 
