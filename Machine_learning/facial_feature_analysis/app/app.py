@@ -110,7 +110,7 @@ def main():
     uploaded_image = st.file_uploader('Image Uploader', type=["jpg", "jpeg", "png"], accept_multiple_files=False)
     
     if uploaded_image:
-        gender, jaw_strength = process_image(image_path)
+        gender, jaw_strength = process_image(uploaded_image)
         st.write(gender, jaw_strength)
 
 if __name__ == '__main__':
