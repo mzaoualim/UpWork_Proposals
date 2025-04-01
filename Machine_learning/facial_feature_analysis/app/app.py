@@ -76,25 +76,13 @@ def jaw_ratio(face_image):
             return jaw_length / face_length
     return None, None
 
-## Classify Jaw Strength
-def classify_jaw_strength(jaw_ratio):
-    '''
-    Jaw length / face length ratio: This ratio is calculated by dividing the jaw length by the face length. A higher ratio typically indicates a stronger jaw.
-    '''
-    for strength, band in range_dict.items():
-        if band[0] <= jaw_ratio <= band[1]:
-            return strength
-        return 'Unable to determine the Jaw Strength \n The computed Jaw ratio is located outside the domaine knowledge range\n'
-
 def process_image(image_path):
-    # # image = cv2.imread(image_path)
     file_bytes = np.asarray(bytearray(image_path.read()), dtype=np.uint8)
     image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     face = detect_and_crop_face(image)
     if face is not None:
         gender = classify_gender(face)
         calculated_jaw_ratio = jaw_ratio(face)
-        # jaw_strength = classify_jaw_strength(gender, calculated_jaw_ratio)
         return gender, calculated_jaw_ratio
     return None, None
 
@@ -106,11 +94,11 @@ def main():
     if uploaded_image:
         gender, calculated_jaw_ratio = process_image(uploaded_image)
         a, b, c = st.columns(3)
+        st.header(f'Predicted gender: {gender}')
         with b:
-            st.header(f'Predicted gender: {gender}')
             st.image(uploaded_image)
 
-        st.markdown("<h2 style='text-align: center;'> STEP 2: SELECT JAW STRENTH RATIO RANGE </h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center;'> STEP 2: SELECT JAW STRENGTH RATIO RANGE </h2>", unsafe_allow_html=True)
         st.info('Based on your domain knowledge,\nSelect corresponding ranges for jaw length to face length ratio to express jaw strength.')
         weak_jaws = st.slider("weak jaws", 0.0, 1.0, (0.2, 0.4))
         medium_jaws = st.slider("medium jaws", 0.0, 1.0, (weak_jaws[1], 0.6))
@@ -130,7 +118,8 @@ def main():
             in_range = False
             for strength, band in range_dict.items():
                 if band[0] <= calculated_jaw_ratio <= band[1]:
-                    st.write(f' The computed ratio equals : {calculated_jaw_ratio}\n.The captured jaws are {strength}')
+                    st.write(f' The computed ratio equals : {calculated_jaw_ratio}\n')
+                    st.write(f'The captured jaws are considered {strength}')
                     in_range = True
             
             if not in_range:
