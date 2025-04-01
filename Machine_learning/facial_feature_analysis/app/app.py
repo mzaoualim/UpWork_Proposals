@@ -105,7 +105,7 @@ def main():
     
     if uploaded_image:
         gender, calculated_jaw_ratio = process_image(uploaded_image)
-        a, b, c = st.columns(2)
+        a, b, c = st.columns(3)
         with b:
             st.header(f'Predicted gender: {gender}')
             st.image(uploaded_image)
