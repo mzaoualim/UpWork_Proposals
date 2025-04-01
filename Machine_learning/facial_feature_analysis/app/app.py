@@ -84,7 +84,7 @@ def classify_jaw_strength(jaw_ratio):
     for strength, (lower, upper) in range_dict.items():
         if lower <= jaw_ratio <= upper:
             return strength
-    return 'Unable to determine the Jaw Strength \n The computed Jaw ratio is located out of the domaine knowledge range\n'
+        return 'Unable to determine the Jaw Strength \n The computed Jaw ratio is located out of the domaine knowledge range\n'
 
 def process_image(image_path):
     # # image = cv2.imread(image_path)
