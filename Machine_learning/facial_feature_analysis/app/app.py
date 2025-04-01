@@ -117,6 +117,7 @@ def main():
         strong_jaws = st.slider("strong jaws", 0.0, 1.0, (medium_jaws[1], 0.7))
 
         st.markdown("<h2 style='text-align: center;'> STEP 3: FINAL RESULTS </h2>", unsafe_allow_html=True)
+        
         generate_results = st.button('Generate Results!', use_container_width=True)
         if generate_results:
             ## Selected Table for Jaw Classification
