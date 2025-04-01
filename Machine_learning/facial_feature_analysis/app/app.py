@@ -105,7 +105,11 @@ def main():
     
     if uploaded_image:
         gender, calculated_jaw_ratio = process_image(uploaded_image)
-        st.write(gender)
+        a, b, c = st.columns(2)
+        with b:
+            st.header(f'Predicted gender: {gender}')
+            st.image(uploaded_image)
+
         st.markdown("<h2 style='text-align: center;'> STEP 2: SELECT JAW STRENTH RATIO RANGE </h2>", unsafe_allow_html=True)
         weak_jaws = st.slider("Select a range of values for weak jaws", 0.0, 1.0, (0.2, 0.4))
         medium_jaws = st.slider("Select a range of values for weak jaws", 0.0, 1.0, (weak_jaws[1], 0.6))
