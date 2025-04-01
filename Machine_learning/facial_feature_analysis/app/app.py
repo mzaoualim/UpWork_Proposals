@@ -74,7 +74,7 @@ def jaw_ratio(face_image):
     return None, None
 
 ## Classify Jaw Strength
-def classify_jaw_strength(gender, jaw_ratio, range_dict):
+def classify_jaw_strength(jaw_ratio):
     '''
     Jaw length / face length ratio: This ratio is calculated by dividing the jaw length by the face length. A higher ratio typically indicates a stronger jaw.
     '''
@@ -91,8 +91,8 @@ def process_image(image_path):
     if face is not None:
         gender = classify_gender(face)
         calculated_jaw_ratio = jaw_ratio(face)
-        jaw_strength = classify_jaw_strength(gender, calculated_jaw_ratio, range_dict)
-        return gender, jaw_strength
+        # jaw_strength = classify_jaw_strength(gender, calculated_jaw_ratio)
+        return gender, calculated_jaw_ratio
     return None, None
 
 def main():
@@ -101,7 +101,7 @@ def main():
     uploaded_image = st.file_uploader('Image Uploader', type=["jpg", "jpeg", "png"], accept_multiple_files=False)
     
     if uploaded_image:
-        gender, jaw_strength = process_image(uploaded_image)
+        gender, calculated_jaw_ratio = process_image(uploaded_image)
         st.write(gender)
         st.markdown("<h2 style='text-align: center;'> STEP 2: SELECT JAW STRENTH RATIO RANGE </h2>", unsafe_allow_html=True)
         weak_jaws = st.slider("Select a range of values for weak jaws", 0.0, 1.0, (0.2, 0.4))
@@ -115,7 +115,7 @@ def main():
             'Weak': weak_jaws,
             }
 
-        st.write("range_dict:",range_dict)
+        st.write(classify_jaw_strength(calculated_jaw_ratio))
 
 if __name__ == '__main__':
   main()
