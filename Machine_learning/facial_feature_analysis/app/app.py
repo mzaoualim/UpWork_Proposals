@@ -82,7 +82,7 @@ def classify_jaw_strength(jaw_ratio):
     Jaw length / face length ratio: This ratio is calculated by dividing the jaw length by the face length. A higher ratio typically indicates a stronger jaw.
     '''
     for strength, band in range_dict.items():
-        if list(band)[0] <= jaw_ratio <= list(band)[1]:
+        if band[0] <= jaw_ratio <= band[1]:
             return strength
         return 'Unable to determine the Jaw Strength \n The computed Jaw ratio is located outside the domaine knowledge range\n'
 
@@ -132,8 +132,9 @@ def main():
                     st.write(strength)
                     break
                 continue
+                st.write('Unable to determine the Jaw Strength \n The computed Jaw ratio is located outside the domaine knowledge range\n')
 
-            st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
+            # st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
 
 if __name__ == '__main__':
   main()
