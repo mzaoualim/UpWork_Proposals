@@ -127,12 +127,14 @@ def main():
                 'Strong': strong_jaws,
                 }
 
+            in_range = False
             for strength, band in range_dict.items():
                 if band[0] <= calculated_jaw_ratio <= band[1]:
                     st.write(strength)
-                    break
-                else:
-                    st.write('Unable to determine the Jaw Strength \n The computed Jaw ratio is located outside the domaine knowledge range\n')
+                    in_range = True
+            
+            if not in_range:
+                st.write('Unable to determine the Jaw Strength \n The computed Jaw ratio is located outside the domaine knowledge range\n')
 
             # st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
 
