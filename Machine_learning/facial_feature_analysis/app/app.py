@@ -34,7 +34,7 @@ mp_face_detection = mp.solutions.face_detection
 mp_drawing = mp.solutions.drawing_utils
 
 def detect_and_crop_face(image):
-  with mp_face_detection.FaceDetection(min_detection_confidence=0.2) as face_detection:
+    with mp_face_detection.FaceDetection(min_detection_confidence=0.2) as face_detection:
         results = face_detection.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         if results.detections:
             for detection in results.detections:
@@ -43,7 +43,7 @@ def detect_and_crop_face(image):
                 x, y, w, h = int(bboxC.xmin * iw), int(bboxC.ymin * ih), int(bboxC.width * iw), int(bboxC.height * ih)
                 face = image[y:y+h, x:x+w]
                 return cv2.resize(face, (224, 224))  # Standardize size
-  return None
+    return None
 
 def classify_gender(face_image):
     # Resize the image to the expected input shape of the model (96, 96)
@@ -86,13 +86,14 @@ def jaw_ratio(face_image):
 
 ## Classify Jaw Strength
 def classify_jaw_strength(gender, jaw_ratio):
-  '''
-  Jaw length / face length ratio: This ratio is calculated by dividing the jaw length by the face length. A higher ratio typically indicates a stronger jaw.
-  '''
+    '''
+    Jaw length / face length ratio: This ratio is calculated by dividing the jaw length by the face length. A higher ratio typically indicates a stronger jaw.
+    '''
     for strength, (lower, upper) in range_dict[gender].items():
         if lower <= jaw_ratio <= upper:
             return strength
     return 'Unable to determine the Jaw Strength \n The computed Jaw ratio is located out of the domaine knowledge range\n'
+
 def process_image(image_path):
     image = cv2.imread(image_path)
     face = detect_and_crop_face(image)
@@ -108,4 +109,3 @@ def main():
 
 if __name__ == '__main__':
   main()
-
