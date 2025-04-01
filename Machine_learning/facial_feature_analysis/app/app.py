@@ -95,10 +95,10 @@ def classify_jaw_strength(gender, jaw_ratio):
     return 'Unable to determine the Jaw Strength \n The computed Jaw ratio is located out of the domaine knowledge range\n'
 
 def process_image(image_path):
-    # image = cv2.imread(image_path)
-    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-    image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-    face = detect_and_crop_face(image)
+    # # image = cv2.imread(image_path)
+    # file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+    # image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    face = detect_and_crop_face(image_path)
     if face is not None:
         gender = classify_gender(face)
         calculated_jaw_ratio = jaw_ratio(face)
