@@ -84,7 +84,7 @@ def classify_jaw_strength(jaw_ratio):
     for strength, band in range_dict.items():
         if band[0] <= jaw_ratio <= band[1]:
             return strength
-        return 'Unable to determine the Jaw Strength \n The computed Jaw ratio is located out of the domaine knowledge range\n'
+        return 'Unable to determine the Jaw Strength \n The computed Jaw ratio is located outside the domaine knowledge range\n'
 
 def process_image(image_path):
     # # image = cv2.imread(image_path)
@@ -127,6 +127,12 @@ def main():
                 'Weak': set(weak_jaws),
                 }
             st.write(range_dict.items())
+
+            for strength, band in range_dict.items():
+                if band[0] <= jaw_ratio <= band[1]:
+                    print('True')
+                print('false')
+                
             st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
 
 if __name__ == '__main__':
