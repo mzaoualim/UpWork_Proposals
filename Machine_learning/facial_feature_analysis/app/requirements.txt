@@ -3,5 +3,4 @@ requests
 mediapipe
 opencv-python-headless
 cvlib
-numpy
 tensorflow
