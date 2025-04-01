@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import mediapipe as mp
-import cv2
+import opencv-python as cv2
 import cvlib as cv
 import numpy as np
 import tensorflow as tf
