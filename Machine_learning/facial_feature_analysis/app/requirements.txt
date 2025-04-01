@@ -1,6 +1,6 @@
 streamlit
 requests
-opencv-python
+opencv-python == 4.0
 numpy
 cvlib
 mediapipe
