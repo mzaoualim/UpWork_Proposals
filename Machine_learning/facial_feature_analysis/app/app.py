@@ -106,9 +106,12 @@ def process_image(image_path):
 
 def main():
     st.markdown("<h1 style='text-align: center;'> JAW STRENGTH CLASSIFIER </h1>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align: center;'> UPLOAD IMAGE </h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'> STEP 1: UPLOAD IMAGE </h2>", unsafe_allow_html=True)
     uploaded_image = st.file_uploader('Image Uploader', type=["jpg", "jpeg", "png"], accept_multiple_files=False)
-    st.write(uploaded_image)
+    
+    if uploaded_image:
+        gender, jaw_strength = process_image(image_path)
+        st.write(gender, jaw_strength)
 
 if __name__ == '__main__':
   main()
