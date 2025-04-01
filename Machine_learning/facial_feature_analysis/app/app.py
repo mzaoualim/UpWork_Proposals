@@ -116,16 +116,17 @@ def main():
         medium_jaws = st.slider("medium jaws", 0.0, 1.0, (weak_jaws[1], 0.6))
         strong_jaws = st.slider("strong jaws", 0.0, 1.0, (medium_jaws[1], 0.7))
 
-        ## Selected Table for Jaw Classification
-        range_dict = {
-            'Strong': strong_jaws,
-            'Average': medium_jaws,
-            'Weak': weak_jaws,
-            }
-
         st.markdown("<h2 style='text-align: center;'> STEP 3: FINAL RESULTS </h2>", unsafe_allow_html=True)
-        # if st.button('Generate!'):
-        st.write(calculated_jaw_ratio, classify_jaw_strength(calculated_jaw_ratio))
+        generate_results = st.button('Generate Results!', use_container_width=True)
+        if generate_results:
+            ## Selected Table for Jaw Classification
+            range_dict = {
+                'Strong': strong_jaws,
+                'Average': medium_jaws,
+                'Weak': weak_jaws,
+                }
+
+            st.write(calculated_jaw_ratio, classify_jaw_strength(calculated_jaw_ratio))
 
 if __name__ == '__main__':
   main()
