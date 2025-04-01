@@ -105,7 +105,10 @@ def process_image(image_path):
     return None, None
 
 def main():
-    st.markdown("<h1 style='text-align: center;'> PREDICT AND PROVIDE INSIGHTS ON LOAN APPROVAL DECISIONS </h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center;'> JAW STRENGTH CLASSIFIER </h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'> UPLOAD IMAGE </h2>", unsafe_allow_html=True)
+    uploaded_image = st.file_uploader('Image Uploader', type=["jpg", "jpeg", "png"], accept_multiple_files=False, key=None, help=None, on_change=None, args=None, kwargs=None, *, disabled=False, label_visibility="visible")
+    st.write(uploaded_image)
 
 if __name__ == '__main__':
   main()
