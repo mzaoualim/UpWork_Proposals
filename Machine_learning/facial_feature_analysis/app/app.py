@@ -127,7 +127,7 @@ def main():
                 'Weak': set(weak_jaws),
                 }
             st.write(range_dict.values())
-            st.write(set(range_dict.values()))
+            st.write(tuple(range_dict.values()))
             st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
 
 if __name__ == '__main__':
