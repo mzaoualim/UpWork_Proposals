@@ -1,6 +1,6 @@
 streamlit
 requests
-mediapipe
 opencv-python-headless
 cvlib
+mediapipe
 tensorflow
