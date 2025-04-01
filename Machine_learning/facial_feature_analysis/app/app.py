@@ -111,9 +111,10 @@ def main():
             st.image(uploaded_image)
 
         st.markdown("<h2 style='text-align: center;'> STEP 2: SELECT JAW STRENTH RATIO RANGE </h2>", unsafe_allow_html=True)
-        weak_jaws = st.slider("Select a range of values for weak jaws", 0.0, 1.0, (0.2, 0.4))
-        medium_jaws = st.slider("Select a range of values for weak jaws", 0.0, 1.0, (weak_jaws[1], 0.6))
-        strong_jaws = st.slider("Select a range of values for weak jaws", 0.0, 1.0, (medium_jaws[1], 0.7))
+        st.info('Based on your domain knowledge,\nSelect corresponding ranges for jaw length to face length ratio to express jaw strength.')
+        weak_jaws = st.slider("weak jaws", 0.0, 1.0, (0.2, 0.4))
+        medium_jaws = st.slider("medium jaws", 0.0, 1.0, (weak_jaws[1], 0.6))
+        strong_jaws = st.slider("strong jaws", 0.0, 1.0, (medium_jaws[1], 0.7))
 
         ## Selected Table for Jaw Classification
         range_dict = {
