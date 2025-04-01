@@ -122,9 +122,9 @@ def main():
         if generate_results:
             ## Selected Table for Jaw Classification
             range_dict = {
-                'Strong': strong_jaws,
-                'Average': medium_jaws,
-                'Weak': weak_jaws,
+                'Strong': strong_jaws.values,
+                'Average': medium_jaws.values,
+                'Weak': weak_jaws.values,
                 }
             st.write(range_dict)
             st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
