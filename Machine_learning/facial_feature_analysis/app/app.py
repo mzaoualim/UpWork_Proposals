@@ -94,9 +94,9 @@ def main():
     if uploaded_image:
         gender, calculated_jaw_ratio = process_image(uploaded_image)
         a, b, c = st.columns(3)
-        st.subheader(f'Predicted gender: {gender}', use_container_width=True)
         with b:
             st.image(uploaded_image)
+        st.subheader(f'Predicted gender: {gender}')
 
         st.markdown("<h2 style='text-align: center;'> STEP 2: SELECT JAW STRENGTH RATIO RANGE </h2>", unsafe_allow_html=True)
         st.info('Based on your domain knowledge,\nSelect corresponding ranges for jaw length to face length ratio to express jaw strength.')
