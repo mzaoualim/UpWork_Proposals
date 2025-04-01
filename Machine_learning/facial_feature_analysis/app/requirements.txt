@@ -1,7 +1,0 @@
-streamlit
-requests
-opencv-python == 4.0
-numpy
-cvlib
-mediapipe
-tensorflow
