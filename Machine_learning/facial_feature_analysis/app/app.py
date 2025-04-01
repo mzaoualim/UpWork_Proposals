@@ -112,7 +112,7 @@ def main():
         range_dict = {
             'Strong': strong_jaws,
             'Average': medium_jaws,
-            'Weak': weak_jaws},
+            'Weak': weak_jaws,
             }
 
         st.write("range_dict:",range_dict)
