@@ -91,7 +91,7 @@ def process_image(image_path):
     if face is not None:
         gender = classify_gender(face)
         calculated_jaw_ratio = jaw_ratio(face)
-        jaw_strength = classify_jaw_strength(gender, calculated_jaw_ratio)
+        jaw_strength = classify_jaw_strength(gender, calculated_jaw_ratio, range_dict)
         return gender, jaw_strength
     return None, None
 
