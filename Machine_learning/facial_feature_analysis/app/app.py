@@ -127,7 +127,7 @@ def main():
                 'Weak': weak_jaws,
                 }
 
-            st.write(calculated_jaw_ratio, classify_jaw_strength(calculated_jaw_ratio))
+            st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
 
 if __name__ == '__main__':
   main()
