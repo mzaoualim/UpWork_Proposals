@@ -7,17 +7,6 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-## Domain Knowledge Table for Jaw Classification
-range_dict = {
-    'Male':
-    {'Strong': (0.45, 0.55),
-    'Average': (0.40, 0.50),
-    'Weak': (0.35, 0.45)},
-    'Female':
-    {'Strong': (0.40, 0.50),
-    'Average': (0.35, 0.45),
-    'Weak': (0.30, 0.35)}
-}
 ## Download the model file
 url = "https://huggingface.co/spaces/VictorPanther/SSI_Gender_Detection/resolve/main/gender_detection.h5"
 response = requests.get(url, stream=True)
@@ -118,7 +107,15 @@ def main():
         weak_jaws = st.slider("Select a range of values for weak jaws", 0.0, 1.0, (0.2, 0.4))
         medium_jaws = st.slider("Select a range of values for weak jaws", 0.0, 1.0, (weak_jaws[1], 0.6))
         strong_jaws = st.slider("Select a range of values for weak jaws", 0.0, 1.0, (medium_jaws[1], 0.7))
-        st.write("Values:", weak_jaws, medium_jaws, strong_jaws)
+
+        ## Selected Table for Jaw Classification
+        range_dict = {
+            'Strong': strong_jaws,
+            'Average': medium_jaws,
+            'Weak': weak_jaws},
+            }
+
+        st.write("range_dict:",range_dict)
 
 if __name__ == '__main__':
   main()
