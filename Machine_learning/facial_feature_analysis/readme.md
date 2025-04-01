@@ -38,18 +38,26 @@ Initial short-term contract, with the goal of ongoing collaboration as we expand
 If this sounds interesting, please reach out with your background, relevant projects, and a brief outline of how you might approach the jaw classification challenge. </i>
 ____________________________________________________________________________________________
 ### Project Proposal
+
 <i> 
 Developing a jaw-strength classification model & web application following these steps: 
+   
 1. **Face Detection:**
    - **MediaPipe** is a good choice for face detection as it provides robust facial landmark detection. You can use it to crop the face from the image effectively.
+     
 2. **Classify Faces into Male, Female:**
    - Using pre-trained models for gender classification, such as those available in libraries like TensorFlow or PyTorch. Fine-tuning these models on your specific dataset can improve accuracy.
+     
 3. **Measure Jaw Length Ratio to Face Length:**
    - Using the facial landmarks detected by MediaPipe to calculate the jaw length and face length. You can define specific points on the jawline and face to measure these distances.
+     
 4. **Domain Knowledge Table for Jaw Classification:**
    - Develop a table based on domain knowledge or literature that categorizes jaw ratios into strong, moderate/average, or weak/receding. This table should be validated with expert input if possible.
+     
 5. Wrapping it all in a Streamlit Web application for testing.
 </i>
 ____________________________________________________________________________________________
+
 ### Proof of concept
+
 <i> MVP/[Streamlit Web Application](https://jaws-strength-classifier.streamlit.app/) to interact/test models </i>
