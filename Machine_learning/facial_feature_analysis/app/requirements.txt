@@ -1,4 +1,12 @@
 streamlit
+<<<<<<< HEAD
+requests
+opencv-python-headless
+numpy
+cvlib
+mediapipe
+tensorflow
+=======
 absl-py==1.4.0
 accelerate==1.5.2
 aiohappyeyeballs==2.6.1
@@ -597,3 +605,5 @@ yfinance==0.2.55
 zict==3.0.0
 zipp==3.21.0
 zstandard==0.23.0
+
+>>>>>>> 7d9ce0bedc93b227cda2f8508a4898dcbe7f7588
