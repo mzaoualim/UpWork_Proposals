@@ -1,7 +1,7 @@
 streamlit
 requests
 mediapipe
-cv2
+opencv-python
 cvlib
 numpy 
 tensorflow
