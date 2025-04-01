@@ -1,3 +1,4 @@
+import streamlit as st
 import requests
 import mediapipe as mp
 import cv2
@@ -102,8 +103,8 @@ def process_image(image_path):
         return gender, jaw_strength
     return None, None
 
-def main()
-  return
+def main():
+    st.markdown("<h1 style='text-align: center;'> PREDICT AND PROVIDE INSIGHTS ON LOAN APPROVAL DECISIONS </h1>", unsafe_allow_html=True)
 
 if __name__ == '__main__':
   main()
