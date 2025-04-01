@@ -74,11 +74,11 @@ def jaw_ratio(face_image):
     return None, None
 
 ## Classify Jaw Strength
-def classify_jaw_strength(gender, jaw_ratio):
+def classify_jaw_strength(gender, jaw_ratio, range_dict):
     '''
     Jaw length / face length ratio: This ratio is calculated by dividing the jaw length by the face length. A higher ratio typically indicates a stronger jaw.
     '''
-    for strength, (lower, upper) in range_dict.items():
+    for strength, (lower, upper) in .items():
         if lower <= jaw_ratio <= upper:
             return strength
     return 'Unable to determine the Jaw Strength \n The computed Jaw ratio is located out of the domaine knowledge range\n'
