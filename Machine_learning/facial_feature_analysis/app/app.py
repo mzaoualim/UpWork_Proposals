@@ -129,10 +129,10 @@ def main():
             st.write(range_dict.items())
 
             for strength, band in range_dict.items():
-                if band[0] <= jaw_ratio <= band[1]:
+                if float(band[0]) <= float(calculated_jaw_ratio) <= float(band[1]):
                     print('True')
                 print('false')
-                
+
             st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
 
 if __name__ == '__main__':
