@@ -126,11 +126,12 @@ def main():
                 'Average': medium_jaws,
                 'Strong': strong_jaws,
                 }
-            st.write(range_dict.items())
 
             for strength, band in range_dict.items():
                 if band[0] <= calculated_jaw_ratio <= band[1]:
                     st.write(strength)
+                continue
+            st.write('end')
 
             st.write(np.round(calculated_jaw_ratio, 2), classify_jaw_strength(calculated_jaw_ratio))
 
