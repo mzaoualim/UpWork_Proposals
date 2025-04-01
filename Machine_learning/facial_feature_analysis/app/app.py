@@ -122,7 +122,8 @@ def main():
             'Weak': weak_jaws,
             }
 
-        st.write(classify_jaw_strength(calculated_jaw_ratio))
+        st.markdown("<h2 style='text-align: center;'> STEP 3: FINAL RESULTS </h2>", unsafe_allow_html=True)
+        st.write(calculated_jaw_ratio, classify_jaw_strength(calculated_jaw_ratio))
 
 if __name__ == '__main__':
   main()
