@@ -5,10 +5,3 @@ opencv-python-headless
 cvlib
 numpy
 tensorflow
-textblob
-scipy
-numpy
-pytesseract
-nltk
-pandas
-scikit-learn
