@@ -17,6 +17,9 @@ with open("gender_detection.h5", "wb") as f:
         f.write(chunk)
 
 gender_model = load_model('gender_detection.h5')
+
+# range_dict
+range_dict = {}
       
 ## Initialize MediaPipe Face Detection
 mp_face_detection = mp.solutions.face_detection
