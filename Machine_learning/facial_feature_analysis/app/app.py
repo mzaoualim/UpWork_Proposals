@@ -18,16 +18,16 @@ range_dict = {
     'Average': (0.35, 0.45),
     'Weak': (0.30, 0.35)}
 }
-## Download the model file
-url = "https://huggingface.co/spaces/VictorPanther/SSI_Gender_Detection/resolve/main/gender_detection.h5"
-response = requests.get(url, stream=True)
-response.raise_for_status()  # Raise an exception for bad responses
+# ## Download the model file
+# url = "https://huggingface.co/spaces/VictorPanther/SSI_Gender_Detection/resolve/main/gender_detection.h5"
+# response = requests.get(url, stream=True)
+# response.raise_for_status()  # Raise an exception for bad responses
 
-with open("gender_detection.h5", "wb") as f:
-    for chunk in response.iter_content(chunk_size=8192):
-        f.write(chunk)
+# with open("gender_detection.h5", "wb") as f:
+#     for chunk in response.iter_content(chunk_size=8192):
+#         f.write(chunk)
 
-gender_model = load_model('/content/gender_detection.h5')
+# gender_model = load_model('/content/gender_detection.h5')
       
 ## Initialize MediaPipe Face Detection
 mp_face_detection = mp.solutions.face_detection
