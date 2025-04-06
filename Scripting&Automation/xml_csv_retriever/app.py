@@ -4,10 +4,15 @@ import requests
 import xml.etree.ElementTree as ET
 from io import StringIO
 
-def fetch_xml(url):
-    response = requests.get(url)
+def fetch_xml(file_url):
+    response = requests.get(file_url)
     if response.status_code == 200:
-        return response.content
+        content_type = response.headers.get('Content-Type')
+        if 'xml' in content_type:
+            return response.content
+        else:
+            st.error("The URL did not return XML content.")
+            return None
     else:
         st.error("Failed to retrieve the XML file.")
         return None
