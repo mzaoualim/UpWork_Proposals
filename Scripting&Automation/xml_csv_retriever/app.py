@@ -43,9 +43,6 @@ def main():
         if xml_data:
             df = parse_xml(xml_data)
             if not df.empty:
-                st.write("Data Preview:")
-                st.dataframe(df.head())  # Display the first few rows of the DataFrame
-
                 # Show a hint of the DataFrame structure
                 st.write("Here's a hint of the extracted data:")
                 st.write(df.head())  # This will show the DataFrame in a more detailed format
