@@ -6,17 +6,68 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from PIL import Image
 import io
+import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+import os
 
-## Download the model file
-url = "https://huggingface.co/spaces/VictorPanther/SSI_Gender_Detection/resolve/main/gender_detection.h5"
-response = requests.get(url, stream=True)
-response.raise_for_status()
+# Setup retry strategy
+retry_strategy = Retry(
+    total=3,
+    backoff_factor=1,
+    status_forcelist=[429, 500, 502, 503, 504],
+)
+adapter = HTTPAdapter(max_retries=retry_strategy)
+http = requests.Session()
+http.mount("https://", adapter)
+http.mount("http://", adapter)
 
-with open("gender_detection.h5", "wb") as f:
-    for chunk in response.iter_content(chunk_size=8192):
-        f.write(chunk)
+# Model download with caching
+@st.cache_resource
+def download_model():
+    model_path = "gender_detection.h5"
+    
+    # Check if model already exists
+    if os.path.exists(model_path):
+        return load_model(model_path)
+    
+    url = "https://huggingface.co/spaces/VictorPanther/SSI_Gender_Detection/resolve/main/gender_detection.h5"
+    
+    try:
+        # Add headers
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = http.get(url, stream=True, headers=headers)
+        response.raise_for_status()
 
-gender_model = load_model('gender_detection.h5')
+        # Save the model
+        with open(model_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+                
+        return load_model(model_path)
+    
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 429:
+            st.error("Too many requests to the model server. Please try again later.")
+        else:
+            st.error(f"Error downloading model: {str(e)}")
+        return None
+    except Exception as e:
+        st.error(f"Unexpected error: {str(e)}")
+        return None
+
+# Load the model
+try:
+    gender_model = download_model()
+    if gender_model is None:
+        st.error("Failed to load the model. Please refresh the page or try again later.")
+        st.stop()
+except Exception as e:
+    st.error(f"Error loading model: {str(e)}")
+    st.stop()
 
 # range_dict
 range_dict = {}
