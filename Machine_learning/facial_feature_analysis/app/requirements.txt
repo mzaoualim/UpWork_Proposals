@@ -1,7 +1,7 @@
 streamlit
 requests
-opencv-python-headless
 numpy
 cvlib
 mediapipe
 tensorflow
+Pillow
