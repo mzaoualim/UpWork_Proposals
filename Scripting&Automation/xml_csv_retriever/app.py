@@ -36,7 +36,7 @@ def main():
     st.title("XML to CSV Converter")
 
     # URL input
-    url = st.text_input("Enter the URL of the XML file:", "https://dblp.uni-trier.de/xml/")
+    url = st.text_input("Enter the URL of the XML file:", "https://www.w3schools.com/xml/cd_catalog.xml")
 
     if st.button("Convert to CSV"):
         xml_data = fetch_xml(url)
