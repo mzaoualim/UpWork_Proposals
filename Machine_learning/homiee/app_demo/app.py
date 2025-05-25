@@ -59,24 +59,55 @@ if mode == "Show 10 Random Predictions":
     st_folium(m, width=700, height=500)
 
 elif mode == "Predict on Map Double Click":
-    st.info("Double click anywhere on the map to get predicted price for that location.")
+    # st.info("Double click anywhere on the map to get predicted price for that location.")
 
+    # m = folium.Map(location=[df.latitude.mean(), df.longitude.mean()], zoom_start=11)
+    # st.write("Double click anywhere on the map to predict house price for that location (using average year/quarter in dataset).")
+    # map_data = st_folium(m, width=700, height=500)
+
+    # if map_data and map_data['last_object_clicked']:
+    #     latitude = map_data['last_clicked']['lat']
+    #     longitude = map_data['last_clicked']['long']
+
+    #     from datetime import datetime
+    #     now = datetime.now()
+    #     year = now.year
+    #     quarter = (now.month - 1) // 3 + 1
+
+    #     features = np.array([[year, quarter, latitude, longitude]])
+    #     pred = model.predict(features)[0]
+
+    #     address = get_address(latitude, longitude)
+    #     st.success(f"Predicted price at ({latitude:.4f}, {longitude:.4f}) is **{pred:.2f}**")
+    #     st.write(f"Address: {address}")
+    st.info("Click anywhere on the map to get the predicted price for that location.")
+
+    # Create a Folium map centered on the mean latitude and longitude of your dataset
     m = folium.Map(location=[df.latitude.mean(), df.longitude.mean()], zoom_start=11)
-    st.write("Double click anywhere on the map to predict house price for that location (using average year/quarter in dataset).")
+
+    # Display the map in Streamlit
+    st.write("Click anywhere on the map to predict house price for that location (using current year/quarter).")
     map_data = st_folium(m, width=700, height=500)
 
-    if map_data and map_data['last_object_clicked']:
+    # Check for single-click data from the map interaction
+    if map_data and 'last_clicked' in map_data and map_data['last_clicked']:
         latitude = map_data['last_clicked']['lat']
-        longitude = map_data['last_clicked']['long']
+        longitude = map_data['last_clicked']['lng']
 
-        from datetime import datetime
+        # Get current year and quarter for prediction
         now = datetime.now()
         year = now.year
         quarter = (now.month - 1) // 3 + 1
 
+        # Prepare features for prediction
         features = np.array([[year, quarter, latitude, longitude]])
         pred = model.predict(features)[0]
 
+        # Get address for the clicked location
         address = get_address(latitude, longitude)
-        st.success(f"Predicted price at ({latitude:.4f}, {longitude:.4f}) is **{pred:.2f}**")
+        
+        # Display prediction and address
+        st.success(f"Predicted price at ({latitude:.4f}, {longitude:.4f}) is **${pred:.2f}**")
         st.write(f"Address: {address}")
+    else:
+        st.warning("Click on the map to select a location for prediction.")
