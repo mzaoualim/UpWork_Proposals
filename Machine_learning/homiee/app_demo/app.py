@@ -44,7 +44,7 @@ if mode == "Show 10 Random Predictions":
 
     rs = int(np.random.uniform(low=0.0, high=100.0, size=1))
     sampled = df.sample(10, random_state=rs)
-    m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=5)
+    m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=8)
 
     # sampled['address'] = get_address(sampled['latitude'], sampled['longitude'])
     sampled['address'] = sampled.apply(lambda row: get_address(row['latitude'], row['longitude']), axis=1)
