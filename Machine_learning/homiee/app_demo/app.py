@@ -108,7 +108,7 @@ elif mode == "Predict on Map Double Click":
                                     'longitude':longitude, 
                                     'year': year, 
                                     'quarter':quarter},
-                                   index=[0]))
+                                   index=[0])
         
         pred = model.predict(features_df)
 
