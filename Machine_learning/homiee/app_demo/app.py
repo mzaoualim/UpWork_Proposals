@@ -50,7 +50,7 @@ if mode == "Show 10 Random Predictions":
         # features = [row['latitude'], row['longitude'], row['year'], row['quarter']]
         # pred = model.predict(features)[0]
         features = np.array([[row['latitude'], row['longitude'], row['year'], row['quarter']]])  # Note the double brackets
-        pred = model.predict(features)[0]
+        pred = model.predict(features)
         address = get_address(row['latitude'], row['longitude'])
         popup = (f"Actual price: {row['actual_price']}<br>"
                  f"Predicted price: {pred:.2f}<br>"
@@ -81,7 +81,7 @@ elif mode == "Predict on Map Double Click":
         # features = [[year, quarter, latitude, longitude]]
         # pred = model.predict(features)[0]
         features = np.array([[latitude, longitude, year, quarter]])  # Note the double brackets
-        pred = model.predict(features)[0]
+        pred = model.predict(features)
         address = get_address(latitude, longitude)
         st.success(f"Predicted price at ({latitude:.4f}, {longitude:.4f}) is **{pred:.2f}**")
         st.write(f"Address: {address}")
