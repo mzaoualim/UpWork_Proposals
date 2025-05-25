@@ -45,7 +45,7 @@ if mode == "Show 10 Random Predictions":
     m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=11)
 
     sampled['address'] = get_address(sampled['latitude'], sampled['longitude'])
-    sampled['predicted_price'] = model.predict(sampled[model.booster_.feature_name()])
+    sampled['predicted_price'] = model.predict(sampled[model.booster_.feature_name()])[0]
     
     for idx, row in sampled.iterrows():
         popup = (f"Actual price: {row['Sold_Price']}<br>"
