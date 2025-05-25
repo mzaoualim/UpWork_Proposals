@@ -36,8 +36,6 @@ model = load_model()
 df = load_data()
 
 st.title("House Price Prediction Demo")
-st.write(model.booster_.feature_name())
-
 mode = st.radio("Choose mode:", ["Show 10 Random Predictions", "Predict on Map Double Click"])
 
 if mode == "Show 10 Random Predictions":
