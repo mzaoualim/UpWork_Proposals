@@ -78,10 +78,8 @@ elif mode == "Predict on Map Double Click":
     map_data = st_folium(m, width=700, height=500)
 
     if map_data and map_data['last_object_clicked']:
-        lat = map_data['last_clicked']['latitude']
-        lon = map_data['last_clicked']['longitude']
-        year = int(df['year'].mode()[0])
-        quarter = int(df['quarter'].mode()[0])
+        latitude = map_data['last_clicked']['lat']
+        longitude = map_data['last_clicked']['long']
 
         from datetime import datetime
         now = datetime.now()
