@@ -3,12 +3,13 @@ import streamlit as st
 import pandas as pd
 import pickle
 import zipfile
+import tempfile
 import folium
 from streamlit_folium import st_folium
 from geopy.geocoders import Nominatim
 
 MODEL_ZIP = "Machine_learning/homiee/app_demo/model_coordinates.zip"
-MODEL_PKL = "model_coordinates.pkl"
+MODEL_PKL = "Machine_learning/homiee/app_demo/model_coordinates.pkl"
 
 def extract_model(zip_path=MODEL_ZIP, model_path=MODEL_PKL):
     if not os.path.isfile(model_path):
