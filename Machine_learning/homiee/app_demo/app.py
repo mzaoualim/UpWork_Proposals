@@ -107,7 +107,8 @@ elif mode == "Predict on Map Double Click":
         features_df = pd.DataFrame({'latitude':latitude, 
                                     'longitude':longitude, 
                                     'year': year, 
-                                    'quarter':quarter})
+                                    'quarter':quarter},
+                                   index=[0]))
         
         pred = model.predict(features_df)
 
