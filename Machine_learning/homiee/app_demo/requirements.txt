@@ -6,3 +6,5 @@ geopy
 folium
 streamlit-folium
 datetime
+geopy
+folium
