@@ -19,7 +19,7 @@ MODEL_ZIP = "Machine_learning/homiee/app_demo/model_coordinates.zip"
 
 @st.cache_resource
 def load_model():
-    with zipfile.ZipFile(MODEL_ZIP, "r") as zip_ref:
+    with zipfile.ZipFile("Machine_learning/homiee/app_demo/model_coordinates.zip", "r") as zip_ref:
         with tempfile.TemporaryDirectory() as tmpdirname:
             zip_ref.extractall(tmpdirname)
             model_path = os.path.join(tmpdirname, "model_coordinates.pkl")
