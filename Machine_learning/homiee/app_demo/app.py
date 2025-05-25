@@ -104,8 +104,12 @@ elif mode == "Predict on Map Double Click":
         quarter = (now.month - 1) // 3 + 1
 
         # Prepare features for prediction
-        features = np.array([[latitude, longitude, year, quarter]])
-        pred = model.predict(features)[0]
+        features_df = pd.DataFrame({'latitude':latitude, 
+                                    'longitude':longitude, 
+                                    'year': year, 
+                                    'quarter':quarter})
+        
+        pred = model.predict(features_df)
 
         # Get address for the clicked location
         address = get_address(latitude, longitude)
