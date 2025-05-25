@@ -60,7 +60,7 @@ if mode == "Show 10 Random Predictions":
         # pred = model.predict(features)[0]
         features_df = pd.DataFrame([[row['latitude'], row['longitude'], row['year'], row['quarter']]], 
                            columns=['latitude', 'longitude', 'year', 'quarter'])
-        pred = model.predict(features_df)[0]
+        pred = model.predict(features_df)
         
         address = get_address(row['latitude'], row['longitude'])
         popup = (f"Actual price: {row['actual_price']}<br>"
