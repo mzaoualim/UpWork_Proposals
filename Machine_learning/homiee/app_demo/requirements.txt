@@ -1,6 +1,6 @@
 streamlit
-lightgbm==3.3.5
-scikit-learn==1.2.2
+lightgbm
+scikit-learn
 pandas
 numpy
 geopy
