@@ -47,7 +47,7 @@ if mode == "Show 10 Random Predictions":
     m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=11)
 
     for idx, row in sampled.iterrows():
-        features = np.array([[row['latitude'], row['longitude'], row['year'], row['quarter']]]).reshape(1, -1)
+        features = np.array([[row['latitude'], row['longitude'], row['year'], row['quarter']]])
         pred = model.predict(features)[0]
         address = get_address(row['latitude'], row['longitude'])
         popup = (f"Actual price: {row['Sold_Price']}<br>"
@@ -76,7 +76,7 @@ elif mode == "Predict on Map Double Click":
         year = now.year
         quarter = (now.month - 1) // 3 + 1
 
-        features = np.array([[year, quarter, latitude, longitude]]).reshape(1, -1)
+        features = np.array([[year, quarter, latitude, longitude]])
         pred = model.predict(features)[0]
 
         address = get_address(latitude, longitude)
