@@ -56,8 +56,12 @@ if mode == "Show 10 Random Predictions":
     m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=11)
 
     for idx, row in sampled.iterrows():
-        features = [row['latitude'], row['longitude'], row['year'], row['quarter']]
-        pred = model.predict(features)[0]
+        # features = [row['latitude'], row['longitude'], row['year'], row['quarter']]
+        # pred = model.predict(features)[0]
+        features_df = pd.DataFrame([[row['latitude'], row['longitude'], row['year'], row['quarter']]], 
+                           columns=['latitude', 'longitude', 'year', 'quarter'])
+        pred = model.predict(features_df)[0]
+        
         address = get_address(row['latitude'], row['longitude'])
         popup = (f"Actual price: {row['actual_price']}<br>"
                  f"Predicted price: {pred:.2f}<br>"
