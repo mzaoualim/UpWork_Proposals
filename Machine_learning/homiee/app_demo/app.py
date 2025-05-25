@@ -42,10 +42,12 @@ mode = st.radio("Choose mode:", ["Show 10 Random Predictions", "Predict on Map D
 if mode == "Show 10 Random Predictions":
     st.info("Randomly sampled locations from the dataset are shown with actual, predicted prices, and address.")
 
-    sampled = df.sample(10, random_state=42)
-    m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=11)
+    rs = int(np.random.uniform(low=0.0, high=100.0, size=1))
+    sampled = df.sample(10, random_state=rs)
+    m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=5)
 
-    sampled['address'] = get_address(sampled['latitude'], sampled['longitude'])
+    # sampled['address'] = get_address(sampled['latitude'], sampled['longitude'])
+    sampled['address'] = sampled.apply(lambda row: get_address(row['latitude'], row['longitude']), axis=1)
     sampled['predicted_price'] = model.predict(sampled[model.booster_.feature_name()])
     
     for idx, row in sampled.iterrows():
