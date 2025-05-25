@@ -9,19 +9,22 @@ from streamlit_folium import st_folium
 from geopy.geocoders import Nominatim
 
 MODEL_ZIP = "Machine_learning/homiee/app_demo/model_coordinates.zip"
-MODEL_PKL = "Machine_learning/homiee/app_demo/model_coordinates.pkl"
+# MODEL_PKL = "Machine_learning/homiee/app_demo/model_coordinates.pkl"
 
-def extract_model(zip_path=MODEL_ZIP, model_path=MODEL_PKL):
-    if not os.path.isfile(model_path):
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall()
-        print(f"Extracted {model_path} from {zip_path}")
+# def extract_model(zip_path=MODEL_ZIP, model_path=MODEL_PKL):
+#     if not os.path.isfile(model_path):
+#         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+#             zip_ref.extractall()
+#         print(f"Extracted {model_path} from {zip_path}")
 
 @st.cache_resource
 def load_model():
-    extract_model()
-    with open(MODEL_PKL, "rb") as f:
-        return pickle.load(f)
+    with zipfile.ZipFile(MODEL_ZIP, "r") as zip_ref:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            zip_ref.extractall(tmpdirname)
+            model_path = os.path.join(tmpdirname, "model.pkl")
+            with open(model_path, "rb") as f:
+                return pickle.load(f)
 
 @st.cache_data
 def load_data():
