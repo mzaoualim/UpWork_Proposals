@@ -1,5 +1,5 @@
 streamlit
-lightgbm
+lightgbm=4.6.0
 pandas
 numpy
 geopy
