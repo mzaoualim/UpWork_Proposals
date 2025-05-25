@@ -36,6 +36,7 @@ def get_address(lat, lon):
 
 model = load_model()   
 df = load_data()
+rs = random.randint(1, 100)
 
 st.title("House Price Prediction Demo")
 mode = st.radio("Choose mode:", ["Show 10 Random Predictions", "Predict on Map Double Click"])
@@ -43,7 +44,7 @@ mode = st.radio("Choose mode:", ["Show 10 Random Predictions", "Predict on Map D
 if mode == "Show 10 Random Predictions":
     st.info("Randomly sampled locations from the dataset are shown with actual, predicted prices, and address.")
 
-    sampled = df.sample(10, random_state=random.randint(1, 100))
+    sampled = df.sample(10, random_state=rs)
     m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=8)
 
     # sampled['address'] = get_address(sampled['latitude'], sampled['longitude'])
