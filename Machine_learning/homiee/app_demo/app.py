@@ -50,7 +50,7 @@ if mode == "Show 10 Random Predictions":
         features = np.array([[row['latitude'], row['longitude'], row['year'], row['quarter']]]).reshape(1, -1)
         pred = model.predict(features)[0]
         address = get_address(row['latitude'], row['longitude'])
-        popup = (f"Actual price: {row['actual_price']}<br>"
+        popup = (f"Actual price: {row['Sold_Price']}<br>"
                  f"Predicted price: {pred:.2f}<br>"
                  f"Address: {address}")
         folium.Marker(
