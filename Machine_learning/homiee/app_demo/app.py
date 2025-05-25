@@ -49,7 +49,6 @@ if mode == "Show 10 Random Predictions":
     for idx, row in sampled.iterrows():
         # features = [row['latitude'], row['longitude'], row['year'], row['quarter']]
         # pred = model.predict(features)[0]
-        for idx, row in sampled.iterrows():
         features = np.array([[row['latitude'], row['longitude'], row['year'], row['quarter']]])  # Note the double brackets
         pred = model.predict(features)[0]
         address = get_address(row['latitude'], row['longitude'])
