@@ -9,13 +9,6 @@ from streamlit_folium import st_folium
 from geopy.geocoders import Nominatim
 
 MODEL_ZIP = "Machine_learning/homiee/app_demo/model_coordinates.zip"
-# MODEL_PKL = "Machine_learning/homiee/app_demo/model_coordinates.pkl"
-
-# def extract_model(zip_path=MODEL_ZIP, model_path=MODEL_PKL):
-#     if not os.path.isfile(model_path):
-#         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-#             zip_ref.extractall()
-#         print(f"Extracted {model_path} from {zip_path}")
 
 @st.cache_resource
 def load_model():
@@ -39,10 +32,7 @@ def get_address(lat, lon):
     except:
         return "Unknown"
 
-model = load_model()
-# st.write("Model object:", model)
-# if model is None:
-#     st.error("Model failed to load!")   
+model = load_model()   
 df = load_data()
 
 st.title("House Price Prediction Demo")
@@ -56,11 +46,9 @@ if mode == "Show 10 Random Predictions":
     m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=11)
 
     for idx, row in sampled.iterrows():
-        # features = [row['latitude'], row['longitude'], row['year'], row['quarter']]
+        features = [row['latitude'], row['longitude'], row['year'], row['quarter']]
         # pred = model.predict(features)[0]
-        features_df = pd.DataFrame([[row['latitude'], row['longitude'], row['year'], row['quarter']]], 
-                           columns=['latitude', 'longitude', 'year', 'quarter'])
-        pred = model.predict(features_df)
+        pred = model.predict(features)
         
         address = get_address(row['latitude'], row['longitude'])
         popup = (f"Actual price: {row['actual_price']}<br>"
