@@ -22,7 +22,7 @@ def load_model():
     with zipfile.ZipFile(MODEL_ZIP, "r") as zip_ref:
         with tempfile.TemporaryDirectory() as tmpdirname:
             zip_ref.extractall(tmpdirname)
-            model_path = os.path.join(tmpdirname, "model.pkl")
+            model_path = os.path.join(tmpdirname, "model_coordinates.pkl")
             with open(model_path, "rb") as f:
                 return pickle.load(f)
 
