@@ -40,10 +40,9 @@ def get_address(lat, lon):
         return "Unknown"
 
 model = load_model()
-st.write("Model object:", model)
-if model is None:
-    st.error("Model failed to load!")
-    
+# st.write("Model object:", model)
+# if model is None:
+#     st.error("Model failed to load!")   
 df = load_data()
 
 st.title("House Price Prediction Demo")
