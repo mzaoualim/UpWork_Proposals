@@ -9,8 +9,6 @@ import folium
 from streamlit_folium import st_folium
 from geopy.geocoders import Nominatim
 
-MODEL_ZIP = "Machine_learning/homiee/app_demo/model_coordinates.zip"
-
 @st.cache_resource
 def load_model():
     with zipfile.ZipFile("Machine_learning/homiee/app_demo/model_coordinates.zip", "r") as zip_ref:
@@ -22,7 +20,8 @@ def load_model():
 
 @st.cache_data
 def load_data():
-    return pd.read_csv('Machine_learning/homiee/app_demo/df.csv')  # Make sure your data includes year, quarter, lat, lon, actual_price
+    return pd.read_csv('Machine_learning/homiee/app_demo/df.csv',
+                      usecols=['latitude', 'longitude', 'year', 'quarter', 'Sold_Price'])  # Make sure your data includes year, quarter, lat, lon, actual_price
 
 geolocator = Nominatim(user_agent="myGeocoder")
 
