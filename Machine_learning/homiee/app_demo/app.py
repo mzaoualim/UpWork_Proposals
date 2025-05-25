@@ -46,13 +46,13 @@ if mode == "Show 10 Random Predictions":
     sampled = df.sample(10, random_state=42)
     m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=11)
 
+    sampled['address'] = get_address(sampled['latitude'], sampled['longitude'])
+    sampled['predicted_price'] = model.predict(sampled[model.booster_.feature_name()])
+    
     for idx, row in sampled.iterrows():
-        features = np.array([[row['latitude'], row['longitude'], row['year'], row['quarter']]])
-        pred = model.predict(features)[0]
-        address = get_address(row['latitude'], row['longitude'])
         popup = (f"Actual price: {row['Sold_Price']}<br>"
-                 f"Predicted price: {pred:.2f}<br>"
-                 f"Address: {address}")
+                 f"Predicted price: {row['predicted_price']}<br>"
+                 f"Address: {row['address']}")
         folium.Marker(
             location=[row['latitude'], row['longitude']],
             popup=folium.Popup(popup, max_width=300),
