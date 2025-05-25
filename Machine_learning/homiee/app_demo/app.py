@@ -116,7 +116,7 @@ elif mode == "Predict on Map Double Click":
         address = get_address(latitude, longitude)
         
         # Display prediction and address
-        st.success(f"Predicted price at ({latitude:.4f}, {longitude:.4f}) is **${pred}**")
+        st.success(f"Predicted price at ({latitude}, {longitude}) is **${pred}**")
         st.write(f"Address: {address}")
     else:
         st.warning("Click on the map to select a location for prediction.")
