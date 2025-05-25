@@ -47,14 +47,14 @@ if mode == "Show 10 Random Predictions":
     m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=11)
 
     for idx, row in sampled.iterrows():
-        features = [idx['latitude'], idx['longitude'], idx['year'], idx['quarter']]
+        features = [row['latitude'], row['longitude'], row['year'], row['quarter']]
         pred = model.predict(features)[0]
-        address = get_address(idx['latitude'], idx['longitude'])
+        address = get_address(row['latitude'], row['longitude'])
         popup = (f"Actual price: {row['actual_price']}<br>"
                  f"Predicted price: {pred:.2f}<br>"
                  f"Address: {address}")
         folium.Marker(
-            location=[idx['latitude'], idx['longitude']],
+            location=[row['latitude'], row['longitude']],
             popup=folium.Popup(popup, max_width=300),
             tooltip="Click for info"
         ).add_to(m)
