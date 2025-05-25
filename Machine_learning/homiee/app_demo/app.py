@@ -1,4 +1,5 @@
 import os
+import random
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -42,8 +43,7 @@ mode = st.radio("Choose mode:", ["Show 10 Random Predictions", "Predict on Map D
 if mode == "Show 10 Random Predictions":
     st.info("Randomly sampled locations from the dataset are shown with actual, predicted prices, and address.")
 
-    rs = int(np.random.uniform(low=0.0, high=100.0, size=1))
-    sampled = df.sample(10, random_state=rs)
+    sampled = df.sample(10, random_state=random.randint(1, 100))
     m = folium.Map(location=[sampled.latitude.mean(), sampled.longitude.mean()], zoom_start=8)
 
     # sampled['address'] = get_address(sampled['latitude'], sampled['longitude'])
