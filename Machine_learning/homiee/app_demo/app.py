@@ -24,7 +24,7 @@ def load_model():
 
 @st.cache_data
 def load_data():
-    return pd.read_csv('df.csv')  # Make sure your data includes year, quarter, lat, lon, actual_price
+    return pd.read_csv('Machine_learning/homiee/app_demo/df.csv')  # Make sure your data includes year, quarter, lat, lon, actual_price
 
 geolocator = Nominatim(user_agent="myGeocoder")
 
