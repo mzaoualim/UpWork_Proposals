@@ -26,13 +26,18 @@ def chooser():
     choise_dict = {}
     return choise_dict
 
-class tool():
-    self.median():
-    
-## computing:
-## --> median price for {steet_name, locality_name} for requested year/quarter
-## --> use recursive forecasting or "walk forward" prediction/imputation for NaN prices
-## --> price prediced, errors!!!
+def median_computer(data, street, locality, year, quarter):
+    median = data.groupby([street, locality, year, quarter])['Price'].median()
+    return median
+
+
+def recursive_forcaster():
+    model, _ = data_model_loader()
+    inputs = chooser()
+    median = median_computer()
+    predicted_price = model.predict(data)
+
+    return predicted_price
 
 ## display:
 ## --> predicted price 
