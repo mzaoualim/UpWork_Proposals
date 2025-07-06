@@ -176,7 +176,7 @@ else:
                     if st.button(f"Select Image {i+1}", key=f"select_btn_{selected_id}_{i}"):
                         st.session_state.selected_image_url = url
                         st.session_state.classification_result = None # Clear previous result
-                        st.experimental_rerun() # Rerun to display selection and clear old result
+                        st.rerun() # Rerun to display selection and clear old result
                 else:
                     st.write(f"Image {i+1} (Error loading)")
             image_counter += 1
