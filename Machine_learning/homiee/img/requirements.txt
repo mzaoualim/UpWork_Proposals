@@ -5,3 +5,5 @@ PIL
 requests
 transformers
 requests
+torch
+Pillow
