@@ -221,7 +221,7 @@ else:
                             st.error(f"An unexpected error occurred during classification: {e}")
                             st.session_state.classification_result = f"Error: Classification failed ({e})"
                     st.success("Classification Complete!")
-                    st.experimental_rerun() # Rerun to display the result
+                    st.rerun() # Rerun to display the result
 
             # Display classification result
             if st.session_state.classification_result:
