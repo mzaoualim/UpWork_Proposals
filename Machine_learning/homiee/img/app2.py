@@ -1,6 +1,7 @@
 import streamlit as st
 from PIL import Image
-import torch torchvision
+import torch 
+import torchvision
 import json
 import io 
 
