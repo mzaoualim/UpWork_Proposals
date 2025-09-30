@@ -52,8 +52,8 @@ def load_vlm_pipeline():
                 image, 
                 prompt=prompt, 
                 max_new_tokens=200, 
-                do_sample=False, 
-                temperature=0.0
+                # do_sample=False, 
+                # temperature=0.0
             )
             generated_text = result[0]['generated_text']
 
