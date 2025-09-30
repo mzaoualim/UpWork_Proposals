@@ -10,12 +10,6 @@ VLM_MODEL_NAME = "Salesforce/blip-vqa-base"
 # The structured prompt instructing the VLM to output JSON
 VLM_PROMPT_TEMPLATE = """
 Based on the image, determine the top 3 most likely room types and their confidence scores (out of 1.0). 
-Output the result ONLY as a compact JSON list of objects following this strict format:
-[
-  { "label": "Living Room", "score": 0.95 },
-  { "label": "Bedroom", "score": 0.03 },
-  { "label": "Kitchen", "score": 0.02 }
-]
 """
 FULL_VLM_PROMPT = f"{VLM_PROMPT_TEMPLATE}"
 
