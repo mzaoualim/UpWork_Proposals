@@ -1,16 +1,14 @@
 import streamlit as st
 from PIL import Image
 import torch
-import json # Re-import json for parsing the VLM output
-
-# Import the Hugging Face pipeline components for VLMs
-from transformers import AutoProcessor, AutoModelForCausalLM, pipeline
+import json
+from transformers import pipeline, AutoProcessor, AutoModelForCausalLM # Import components
 
 # --- Configuration ---
-# Note: LLaVA-1.5-7B is used as a powerful example. 
-# Other VLMs may require different prompt templates or cleanup.
-# VLM_MODEL_NAME = "llava-hf/llava-1.5-7b-hf" 
-VLM_MODEL_NAME = "Salesforce/blip-vqa-base" # A smaller Visual Question Answering model option
+# Using a model known for VQA/Image-to-Text tasks that generally works well 
+# with the 'image-to-text' pipeline. (BLIP-VQA is used for stability).
+VLM_MODEL_NAME = "Salesforce/blip-vqa-base" 
+# VLM_MODEL_NAME = "llava-hf/llava-1.5-7b-hf" # You can try LLaVA again, but it's much larger.
 
 # The structured prompt instructing the VLM to output JSON
 VLM_PROMPT_TEMPLATE = """
@@ -22,76 +20,82 @@ Output the result ONLY as a compact JSON list of objects following this strict f
   { "label": "Kitchen", "score": 0.02 }
 ]
 """
-# Use a system-like instruction for reliability
-FULL_VLM_PROMPT = f"USER: <image>\n{VLM_PROMPT_TEMPLATE}ASSISTANT:"
+# Use a simple prompt structure suitable for the 'image-to-text' pipeline
+FULL_VLM_PROMPT = f"{VLM_PROMPT_TEMPLATE}"
 
-# --- Model Loading ---
+# --- Model Loading (FIXED) ---
 @st.cache_resource
 def load_vlm_pipeline():
-    """Loads a Vision-Language Model (VLM) for structured output generation."""
+    """
+    Loads a Vision-Language Model (VLM) for structured output generation 
+    using the dedicated 'image-to-text' pipeline (FIXED to avoid AutoModelForCausalLM error).
+    """
     try:
         device = 0 if torch.cuda.is_available() else -1
         device_str = "GPU" if device == 0 else "CPU"
         st.info(f"Loading VLM model: {VLM_MODEL_NAME} on device: {device_str}...")
 
-        # Load LLaVA components
-        processor = AutoProcessor.from_pretrained(VLM_MODEL_NAME)
-        model = AutoModelForCausalLM.from_pretrained(
-            VLM_MODEL_NAME,
-            torch_dtype=torch.float16,
-            device_map="auto" if device == 0 else "cpu",
+        # 🎯 FIX: Use the 'image-to-text' pipeline for multimodal models.
+        model_pipeline = pipeline(
+            "image-to-text",
+            model=VLM_MODEL_NAME,
+            device=device 
         )
         
-        def llava_classifier_structured(image, prompt):
-            """Runs LLaVA generation and attempts to clean the output."""
-            inputs = processor(text=prompt, images=image, return_tensors="pt").to(model.device)
+        # --- Wrapper Function ---
+        def vlm_classifier_structured(image, prompt):
+            """Runs VLM generation and attempts to clean the structured JSON output."""
             
-            # Allow enough tokens for the JSON output (e.g., 200 tokens)
-            output = model.generate(**inputs, max_new_tokens=200, temperature=0.0) 
-            
-            # Decode and clean the raw output
-            response = processor.decode(output[0], skip_special_tokens=True)
-            
-            # Isolate the ASSISTANT's response
-            answer_start = response.rfind("ASSISTANT:")
-            if answer_start != -1:
-                 generated_text = response[answer_start + len("ASSISTANT:"):].strip()
-            else:
-                 generated_text = response.strip()
+            # The 'image-to-text' pipeline uses the 'prompt' argument for VQA/VLM questions
+            # Setting low temperature for deterministic (classification-like) output
+            result = model_pipeline(
+                image, 
+                prompt=prompt, 
+                max_new_tokens=200, 
+                do_sample=False, 
+                temperature=0.0
+            )
+            generated_text = result[0]['generated_text']
 
             # Attempt to find and parse the JSON part of the generated text
             try:
-                # Often the JSON is wrapped in ```json ... ``` blocks
-                if '```json' in generated_text:
-                    json_str = generated_text.split('```json')[1].split('```')[0].strip()
-                elif '```' in generated_text:
-                    # In case it uses a single block
-                    json_str = generated_text.split('```')[1].split('```')[0].strip()
-                else:
-                    # Assume the whole response is the JSON array (best case)
-                    json_str = generated_text
+                json_str = generated_text.strip()
+                
+                # Common cleanup steps for VLM JSON output
+                if '```json' in json_str:
+                    json_str = json_str.split('```json')[1].split('```')[0].strip()
+                elif '```' in json_str:
+                    json_str = json_str.split('```')[1].split('```')[0].strip()
                 
                 # Load the JSON list
                 predictions = json.loads(json_str)
                 
-                # Check for required fields and sort (VLM may not follow the prompt order)
+                # Validate, clean, and sort predictions
                 if isinstance(predictions, list):
+                    # Filter out entries missing essential keys and convert score to float
+                    def get_score(p):
+                        try:
+                            return float(p.get('score', 0.0))
+                        except ValueError:
+                            return 0.0
+                            
                     predictions = [p for p in predictions if 'label' in p and 'score' in p]
+                    
                     # Sort by score descending and return only the top 3
-                    return sorted(predictions, key=lambda x: x['score'], reverse=True)[:3]
+                    return sorted(predictions, key=get_score, reverse=True)[:3]
                 else:
-                    raise ValueError("VLM response was not a JSON list.")
+                    raise ValueError("VLM response was not a valid JSON list.")
 
             except Exception as e:
                 # Return the raw text if parsing fails for debugging
                 return {"error": f"JSON parsing failed. Raw VLM output: {generated_text}. Error: {e}"}
 
         st.success(f"VLM model ({VLM_MODEL_NAME}) loaded successfully!")
-        return llava_classifier_structured
+        return vlm_classifier_structured
 
     except Exception as e:
         st.error(f"Error loading VLM model: {e}")
-        st.warning("Ensure you have sufficient VRAM and that the model supports multimodal generation.")
+        st.warning("Please check if the model name is correct and if you have enough VRAM for this VLM.")
         st.stop()
         return None
 
@@ -102,7 +106,7 @@ classifier = load_vlm_pipeline()
 st.set_page_config(layout="wide", page_title="VLM Structured Classifier")
 st.title("🧠 VLM Structured Classifier (Top 3 Scores)")
 
-# --- 1. Load Data: User Image Upload (Unchanged) ---
+# --- 1. Load Data: User Image Upload ---
 st.header("1. Upload Your Images")
 uploaded_files = st.file_uploader(
     "Choose one or more image files",
@@ -110,7 +114,7 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True
 )
 
-# Initialize session state variables (Unchanged)
+# Initialize session state variables
 if 'selected_image_data' not in st.session_state:
     st.session_state.selected_image_data = None
 if 'classification_result' not in st.session_state:
@@ -118,13 +122,13 @@ if 'classification_result' not in st.session_state:
 if 'last_uploaded_files' not in st.session_state:
     st.session_state.last_uploaded_files = []
 
-# Clear selection logic (Unchanged)
+# Clear selection logic
 if uploaded_files and (st.session_state.last_uploaded_files != uploaded_files):
     st.session_state.selected_image_data = None
     st.session_state.classification_result = None
     st.session_state.last_uploaded_files = uploaded_files
 
-# --- 2. Display Images (Unchanged) ---
+# --- 2. Display Images ---
 if uploaded_files:
     st.header("2. Select an Image for Classification")
     st.write("Click a button below an image to select it.")
@@ -146,13 +150,15 @@ if uploaded_files:
             except Exception as e:
                 st.error(f"Error processing {uploaded_file.name}: {e}")
 
-# --- 3. Classify Selected Image (Modified) ---
+# --- 3. Classify Selected Image ---
 if st.session_state.selected_image_data:
     st.markdown("---")
     st.header("3. Classify Selected Image using Structured Prompt")
-    st.write("The VLM is prompted to output a JSON list of the top 3 room types.")
+    st.write("The VLM is prompted to output a **JSON list** of the top 3 room types.")
 
     selected_file = st.session_state.selected_image_data
+    st.write(f"**Selected Image:** `{selected_file.name}`")
+    
     selected_img_to_display = Image.open(selected_file)
     st.image(selected_img_to_display, caption="Image to be classified", width=400)
 
@@ -162,7 +168,6 @@ if st.session_state.selected_image_data:
         else:
             with st.spinner("🧠 Generating structured predictions... Please wait."):
                 try:
-                    # Result is now a list of dictionaries (top 3) or an error dictionary
                     result = classifier(selected_img_to_display, prompt=FULL_VLM_PROMPT)
                     st.session_state.classification_result = result
                     
@@ -171,13 +176,14 @@ if st.session_state.selected_image_data:
                     st.session_state.classification_result = {"error": f"Classification failed ({e})"}
             st.rerun()
 
-# --- 4. Show Result (Modified) ---
+# --- 4. Show Result ---
 if st.session_state.classification_result:
     result = st.session_state.classification_result
     
     # Check if the result is an error dictionary
     if isinstance(result, dict) and 'error' in result:
-        st.error(result['error'])
+        st.error("Classification Error")
+        st.code(result['error'])
         
     # Check if the result is a successful list of predictions
     elif isinstance(result, list):
@@ -189,16 +195,16 @@ if st.session_state.classification_result:
             label = prediction.get('label', 'N/A')
             score = prediction.get('score', 0.0)
             
-            # Ensure score is a number between 0 and 1 for the progress bar
+            # Ensure score is a float
             try:
                 score = float(score)
-            except ValueError:
+            except (TypeError, ValueError):
                 score = 0.0
             
             st.markdown(f"**#{i+1}: {label}**")
             st.progress(score, text=f"Confidence: {score:.2%}")
             
-        st.markdown("**Important Note:** These 'scores' are generated by the VLM's interpretation of probability based on the prompt, not true logit probabilities from a classification layer.")
+        st.markdown("**Important Note:** These 'scores' are generated by the VLM's interpretation of probability based on the prompt, **not true logit probabilities** from a classification layer.")
         
     else:
         st.error("Received an unexpected result format from the VLM.")
