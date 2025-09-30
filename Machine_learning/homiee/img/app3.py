@@ -53,11 +53,11 @@ def predict_room_type(image: Image.Image):
     answer = processor.batch_decode(out, skip_special_tokens=True)[0].strip()
 
         # --- Minimal cleanup (no predefined labels) ---
-    # Take only first sentence/line
-    answer = answer.split("\n")[0]
-    answer = answer.split(".")[0]
-    # Limit to ~3 words
-    answer = " ".join(answer.split()[:3])
+    # # Take only first sentence/line
+    # answer = answer.split("\n")[0]
+    # answer = answer.split(".")[0]
+    # # Limit to ~3 words
+    # answer = " ".join(answer.split()[:3])
     
     return answer.strip()
 # ------------------
