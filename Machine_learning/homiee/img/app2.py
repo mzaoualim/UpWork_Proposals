@@ -1,11 +1,10 @@
 import streamlit as st
 from PIL import Image
 import torch
-import json
 import io
 
 # Hugging Face imports
-from transformers import AutoProcessor, AutoModelForCausalLM
+from transformers import AutoProcessor, AutoModelForVision2Seq
 
 # --- Configuration ---
 QWEN_MODEL_NAME = "Qwen/Qwen2.5-VL-3B-Instruct"
@@ -26,7 +25,7 @@ def load_qwen_vl_model():
         st.info(f"Loading {QWEN_MODEL_NAME} on {device} (map: {device_map})...")
 
         processor = AutoProcessor.from_pretrained(QWEN_MODEL_NAME, trust_remote_code=True)
-        model = AutoModelForCausalLM.from_pretrained(
+        model = AutoModelForVision2Seq.from_pretrained(
             QWEN_MODEL_NAME,
             torch_dtype=(
                 torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
@@ -66,7 +65,7 @@ def infer_room_type(image: Image.Image, prompt: str = VLM_PROMPT_TEMPLATE):
 
     answer = processor.decode(out[0], skip_special_tokens=True).strip()
 
-    # Basic cleanup (remove markdown/code block artifacts if present)
+    # Cleanup any markdown/code block artifacts
     if "```" in answer:
         answer = answer.split("```")[-1].strip()
     return answer
