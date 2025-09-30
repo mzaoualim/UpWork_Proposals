@@ -46,27 +46,23 @@ def load_qwen_vl_model():
 processor, model, device = load_qwen_vl_model()
 
 # --- Room Type Inference ---
-def infer_room_type(image: Image.Image, prompt: str = VLM_PROMPT_TEMPLATE):
-    if model is None:
-        return "❌ Model not loaded"
-
+def predict_room_type(image: Image.Image):
+    prompt = "What type of room is shown in this image? Respond in 1-3 words only."
     inputs = processor(
-        text=prompt,
-        images=image.convert("RGB"),
+        text=[prompt],
+        images=[image.convert("RGB")],
         return_tensors="pt"
     ).to(device)
 
     with torch.no_grad():
         out = model.generate(
             **inputs,
-            max_new_tokens=50,
+            max_new_tokens=32,
             do_sample=False,
             temperature=0.0
         )
 
-    answer = processor.decode(out[0], skip_special_tokens=True).strip()
-
-    # Cleanup any markdown/code block artifacts
+    answer = processor.batch_decode(out, skip_special_tokens=True)[0].strip()
     if "```" in answer:
         answer = answer.split("```")[-1].strip()
     return answer
