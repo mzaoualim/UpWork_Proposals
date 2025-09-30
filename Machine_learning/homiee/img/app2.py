@@ -5,7 +5,9 @@ import json
 from transformers import pipeline
 
 # --- Configuration (Unchanged) ---
-VLM_MODEL_NAME = "Salesforce/blip-vqa-base" 
+# VLM_MODEL_NAME = "Salesforce/blip-vqa-base" 
+VLM_MODEL_NAME = "llava-hf/llava-1.5-7b-hf" # You can try LLaVA again, but it's much larger.
+
 
 # The structured prompt instructing the VLM to output JSON
 VLM_PROMPT_TEMPLATE = """
