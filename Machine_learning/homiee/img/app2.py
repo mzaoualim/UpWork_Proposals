@@ -131,7 +131,7 @@ if st.session_state.selected_image_data:
         else:
             with st.spinner("🔎 Inferring room type..."):
                 try:
-                    result = infer_room_type(selected_img)
+                    result = predict_room_type(selected_img)
                     st.session_state.classification_result = result
                 except Exception as e:
                     st.session_state.classification_result = f"❌ Error: {e}"
