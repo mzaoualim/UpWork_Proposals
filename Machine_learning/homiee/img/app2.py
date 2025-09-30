@@ -8,7 +8,7 @@ import io
 from transformers import AutoProcessor, AutoModelForCausalLM
 
 # --- Configuration ---
-QWEN_MODEL_NAME = "Qwen/Qwen2.5-3B-Instruct-VL" 
+QWEN_MODEL_NAME = "Qwen/Qwen2.5-VL-3B-Instruct"
 # Significantly smaller (~3.6B parameters) VLM that excels at instruction following.
 
 # The structured prompt instructing the VLM to output JSON
