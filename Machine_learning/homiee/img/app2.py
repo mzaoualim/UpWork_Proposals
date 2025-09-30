@@ -1,29 +1,34 @@
 import streamlit as st
 from PIL import Image
 import torch
-from transformers import AutoProcessor, AutoModelForCausalLM
+from transformers import AutoProcessor, AutoModelForVision2Seq, BitsAndBytesConfig
 
-# --- Configuration ---
+# --- Config ---
 MODEL_NAME = "HuggingFaceTB/SmolVLM-Instruct"
 
-# --- Model Loading ---
+# --- Quantization Config (bitsandbytes 4-bit) ---
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type="nf4"
+)
+
 @st.cache_resource
 def load_model():
     try:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        device_map = "auto" if device.type == "cuda" else "cpu"
-
-        st.info(f"Loading {MODEL_NAME} on {device} (map: {device_map})...")
+        st.info(f"Loading {MODEL_NAME} with 4-bit quantization on {device}...")
 
         processor = AutoProcessor.from_pretrained(MODEL_NAME, trust_remote_code=True)
-        model = AutoModelForCausalLM.from_pretrained(
+        model = AutoModelForVision2Seq.from_pretrained(
             MODEL_NAME,
-            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-            device_map=device_map,
+            quantization_config=bnb_config,
+            device_map="auto",
             trust_remote_code=True
         )
 
-        st.success("✅ Model loaded successfully!")
+        st.success("✅ Model loaded with 4-bit quantization!")
         return processor, model, device
     except Exception as e:
         st.error(f"❌ Error loading model: {e}")
@@ -31,10 +36,9 @@ def load_model():
 
 processor, model, device = load_model()
 
-# --- Room Prediction Function ---
+# --- Prediction Function ---
 def predict_room_type(image: Image.Image):
-    # Include <image> token in the prompt to match #images passed
-    prompt = "<image>\nWhat type of room is shown in this image? Respond in 1-3 words only."
+    prompt = "<image>\nWhat type of room is this? Respond in 1-3 words only."
 
     inputs = processor(
         text=[prompt],
@@ -51,18 +55,15 @@ def predict_room_type(image: Image.Image):
         )
 
     answer = processor.batch_decode(out, skip_special_tokens=True)[0].strip()
-
-    # Clean markdown fences if present
     if "```" in answer:
         answer = answer.split("```")[-1].strip()
-
     return answer
 
 # --- Streamlit Layout ---
-st.set_page_config(layout="wide", page_title="SmolVLM Room Classifier")
-st.title("🏠 SmolVLM Room Classifier")
+st.set_page_config(layout="wide", page_title="SmolVLM 4-bit Room Classifier")
+st.title("🏠 SmolVLM Room Classifier (4-bit Quantized)")
 
-# 1. Upload Images
+# Upload
 st.header("1. Upload Your Images")
 uploaded_files = st.file_uploader(
     "Choose image files",
@@ -83,7 +84,7 @@ if uploaded_files:
                 st.session_state.result = None
                 st.rerun()
 
-# 2. Classification
+# Classification
 if "selected_image" in st.session_state:
     st.markdown("---")
     st.header("3. Classification")
@@ -91,7 +92,7 @@ if "selected_image" in st.session_state:
     st.image(st.session_state.selected_image, caption="Image to classify", width=400)
 
     if st.button("🚀 Run Classification"):
-        with st.spinner("Analyzing with SmolVLM..."):
+        with st.spinner("Analyzing with SmolVLM (4-bit)..."):
             try:
                 result = predict_room_type(st.session_state.selected_image)
                 st.session_state.result = result
@@ -100,7 +101,7 @@ if "selected_image" in st.session_state:
                 st.session_state.result = None
         st.rerun()
 
-# 3. Results
+# Results
 if "result" in st.session_state and st.session_state.result:
     st.success("✅ Classification Complete!")
     st.subheader("Predicted Room Type")
