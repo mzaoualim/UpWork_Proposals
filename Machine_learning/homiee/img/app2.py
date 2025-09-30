@@ -7,7 +7,8 @@ import io
 from transformers import AutoProcessor, AutoModelForVision2Seq
 
 # --- Configuration ---
-QWEN_MODEL_NAME = "Qwen/Qwen2.5-VL-3B-Instruct"
+QWEN_MODEL_NAME = "HuggingFaceTB/SmolVLM-256M-Instruct"
+
 
 VLM_PROMPT_TEMPLATE = """
 You are an expert at identifying rooms. 
