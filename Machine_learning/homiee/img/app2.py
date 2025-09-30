@@ -4,7 +4,7 @@ import torch
 from transformers import AutoProcessor, AutoModelForVision2Seq
 
 # --- Config ---
-MODEL_NAME = "HuggingFaceTB/SmolVLM-Instruct"
+MODEL_NAME = "HuggingFaceTB/SmolVLM-256M-Instruct"
 
 @st.cache_resource
 def load_model():
