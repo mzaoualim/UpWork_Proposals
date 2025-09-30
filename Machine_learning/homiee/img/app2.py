@@ -1,34 +1,28 @@
 import streamlit as st
 from PIL import Image
 import torch
-from transformers import AutoProcessor, AutoModelForVision2Seq, BitsAndBytesConfig
+from transformers import AutoProcessor, AutoModelForVision2Seq
 
 # --- Config ---
 MODEL_NAME = "HuggingFaceTB/SmolVLM-Instruct"
-
-# --- Quantization Config (bitsandbytes 4-bit) ---
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.float16,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4"
-)
 
 @st.cache_resource
 def load_model():
     try:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        st.info(f"Loading {MODEL_NAME} with 4-bit quantization on {device}...")
+        device_map = "auto" if device.type == "cuda" else "cpu"
+
+        st.info(f"Loading {MODEL_NAME} on {device}...")
 
         processor = AutoProcessor.from_pretrained(MODEL_NAME, trust_remote_code=True)
         model = AutoModelForVision2Seq.from_pretrained(
             MODEL_NAME,
-            quantization_config=bnb_config,
-            device_map="auto",
+            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+            device_map=device_map,
             trust_remote_code=True
         )
 
-        st.success("✅ Model loaded with 4-bit quantization!")
+        st.success("✅ Model loaded successfully!")
         return processor, model, device
     except Exception as e:
         st.error(f"❌ Error loading model: {e}")
@@ -55,13 +49,16 @@ def predict_room_type(image: Image.Image):
         )
 
     answer = processor.batch_decode(out, skip_special_tokens=True)[0].strip()
+
+    # Cleanup if model returns markdown fences
     if "```" in answer:
         answer = answer.split("```")[-1].strip()
+
     return answer
 
 # --- Streamlit Layout ---
-st.set_page_config(layout="wide", page_title="SmolVLM 4-bit Room Classifier")
-st.title("🏠 SmolVLM Room Classifier (4-bit Quantized)")
+st.set_page_config(layout="wide", page_title="SmolVLM Room Classifier")
+st.title("🏠 SmolVLM Room Classifier")
 
 # Upload
 st.header("1. Upload Your Images")
@@ -92,7 +89,7 @@ if "selected_image" in st.session_state:
     st.image(st.session_state.selected_image, caption="Image to classify", width=400)
 
     if st.button("🚀 Run Classification"):
-        with st.spinner("Analyzing with SmolVLM (4-bit)..."):
+        with st.spinner("Analyzing with SmolVLM..."):
             try:
                 result = predict_room_type(st.session_state.selected_image)
                 st.session_state.result = result
