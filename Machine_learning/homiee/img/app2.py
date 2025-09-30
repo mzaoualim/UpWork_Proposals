@@ -9,7 +9,8 @@ from transformers import AutoProcessor, AutoModelForCausalLM, pipeline
 # --- Configuration ---
 # Note: LLaVA-1.5-7B is used as a powerful example. 
 # Other VLMs may require different prompt templates or cleanup.
-VLM_MODEL_NAME = "llava-hf/llava-1.5-7b-hf" 
+# VLM_MODEL_NAME = "llava-hf/llava-1.5-7b-hf" 
+VLM_MODEL_NAME = "Salesforce/blip-vqa-base" # A smaller Visual Question Answering model option
 
 # The structured prompt instructing the VLM to output JSON
 VLM_PROMPT_TEMPLATE = """
