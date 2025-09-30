@@ -1,7 +1,6 @@
 import streamlit as st
-import json
 from PIL import Image
-from io import BytesIO
+from io import BytesIO # Keep for completeness, though not strictly needed for the Image.open(uploaded_file) approach
 
 # Import the Hugging Face pipeline
 from transformers import pipeline
@@ -12,19 +11,23 @@ import torch # Import torch to check for CUDA availability
 @st.cache_resource
 def load_classifier_pipeline():
     """
-    Loads the zero-shot image classification model from Hugging Face.
+    Loads a standard image classification model from Hugging Face.
     This function will be run only once when the app starts.
+    We are switching to a standard classification model as zero-shot requires labels.
     """
     try:
         # Use GPU if available, otherwise CPU
         device = 0 if torch.cuda.is_available() else -1
-        st.info(f"Loading classifier model on device: {'GPU' if device == 0 else 'CPU'}...")
+        st.info(f"Loading standard image classification model on device: {'GPU' if device == 0 else 'CPU'}...")
+        
+        # Swapping to a standard Image Classification pipeline and model
         model_pipeline = pipeline(
-            "zero-shot-image-classification",
-            model="strollingorange/roomLuxuryAnnotater",
+            "image-classification",
+            # This is a common, general-purpose image classification model
+            model="google/vit-base-patch16-224", 
             device=device
         )
-        st.success("Classifier model loaded successfully!")
+        st.success("Image Classification model loaded successfully!")
         return model_pipeline
     except Exception as e:
         st.error(f"Error loading classifier model: {e}")
@@ -34,37 +37,10 @@ def load_classifier_pipeline():
 
 classifier = load_classifier_pipeline()
 
-# --- Candidate Labels Loading ---
-# This function loads the possible labels from a JSON file and caches them.
-@st.cache_data
-def load_candidate_labels(file_path):
-    """Loads a list of candidate labels from a JSON file."""
-    try:
-        with open(file_path, 'r') as json_file:
-            labels = json.load(json_file)
-        if not isinstance(labels, list):
-            st.error(f"Error: JSON file at {file_path} does not contain a list.")
-            st.stop()
-        return labels
-    except FileNotFoundError:
-        st.error(f"Error: Candidate labels JSON file not found at {file_path}")
-        st.stop()
-    except json.JSONDecodeError:
-        st.error(f"Error: Could not decode JSON from {file_path}. Check file format.")
-        st.stop()
-    except Exception as e:
-        st.error(f"An error occurred loading labels from {file_path}: {e}")
-        st.stop()
-    return []
-
-# NOTE: You'll need to create this JSON file or update the path.
-# Example 'composite_candidate_labels.json': ["modern", "classic", "rustic", "minimalist"]
-composite_candidate_labels = load_candidate_labels('Machine_learning/homiee/img/composite_candidate_labels.json')
-
 # --- Streamlit App Layout ---
 
-st.set_page_config(layout="wide", page_title="Zero-Shot Image Classifier")
-st.title("📸 Zero-Shot Image Classifier")
+st.set_page_config(layout="wide", page_title="Image Classifier")
+st.title("🖼️ Standard Image Classifier (No Label List)")
 
 # --- 1. Load Data: User Image Upload ---
 st.header("1. Upload Your Images")
@@ -126,15 +102,18 @@ if st.session_state.selected_image_data:
 
     # Button to trigger the classification process
     if st.button("🚀 Run Classifier"):
-        if classifier is None or not composite_candidate_labels:
-            st.error("Model or labels are not loaded. Cannot run classification.")
+        if classifier is None:
+            st.error("Model is not loaded. Cannot run classification.")
         else:
             with st.spinner("🧠 Classifying image... Please wait."):
                 try:
-                    # Run zero-shot classification on the selected image
-                    result = classifier(selected_img_to_display, candidate_labels=composite_candidate_labels)
-                    # Store the prediction with the highest score
-                    top_prediction = sorted(result, key=lambda x: x['score'], reverse=True)[0]
+                    # Run standard image classification on the selected image
+                    # The pipeline will return a list of top predictions by default
+                    result = classifier(selected_img_to_display)
+                    
+                    # The result is already a sorted list (by default), 
+                    # but we explicitly grab the top prediction
+                    top_prediction = result[0]
                     st.session_state.classification_result = top_prediction
                 except Exception as e:
                     st.error(f"An unexpected error occurred during classification: {e}")
@@ -150,11 +129,12 @@ if st.session_state.classification_result:
         st.success("✅ Classification Complete!")
         st.subheader("Classification Result")
         
+        # The key names 'label' and 'score' are consistent with the old zero-shot output
         label = result['label']
         score = result['score']
         
         # Display the predicted label and its confidence score
-        st.metric(label="Predicted Label", value=f"`{label}`")
+        st.metric(label="Predicted Class", value=f"`{label}`")
         st.progress(score, text=f"Confidence: {score:.2%}")
     else:
         st.error(result)
