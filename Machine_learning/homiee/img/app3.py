@@ -52,13 +52,14 @@ def predict_room_type(image: Image.Image):
 
     answer = processor.batch_decode(out, skip_special_tokens=True)[0].strip()
 
-    # Clean up the answer → keep only 1–3 words
-    match = re.search(r"(Bedroom|Living Room|Kitchen|Bathroom|Office|Dining Room|Hallway|[A-Za-z ]+)", answer, re.IGNORECASE)
-    if match:
-        return match.group(0).strip()
-    else:
-        return answer.split("\n")[-1].strip()
-
+        # --- Minimal cleanup (no predefined labels) ---
+    # Take only first sentence/line
+    answer = answer.split("\n")[0]
+    answer = answer.split(".")[0]
+    # Limit to ~3 words
+    answer = " ".join(answer.split()[:3])
+    
+    return answer.strip()
 # ------------------
 # Streamlit UI
 # ------------------
