@@ -1,50 +1,55 @@
 import streamlit as st
 from PIL import Image
 import torch
-import io
-import spacy
 import json
+import io
 
+# Hugging Face imports
 from transformers import AutoProcessor, AutoModelForCausalLM
 
 # --- Configuration ---
 QWEN_MODEL_NAME = "Qwen/Qwen2.5-VL-3B-Instruct"
 
-CAPTION_PROMPT = "Describe the contents of this image in one clear sentence."
+VLM_PROMPT_TEMPLATE = """
+You are an expert at identifying rooms. 
+Look at the image and answer: What type of room is this? 
+Respond concisely in 2-4 words only.
+Examples: "Living room", "Bathroom", "Hotel lobby", "Garage".
+"""
 
-# --- Load Spacy NLP ---
-@st.cache_resource
-def load_spacy():
-    return spacy.load("en_core_web_sm")
-
-nlp = load_spacy()
-
-# --- Load Qwen2.5-VL ---
+# --- Model Loading ---
 @st.cache_resource
 def load_qwen_vl_model():
     try:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         device_map = "auto" if device.type == "cuda" else "cpu"
-        st.info(f"Loading Qwen2.5-VL model ({QWEN_MODEL_NAME}) on {device}...")
+        st.info(f"Loading {QWEN_MODEL_NAME} on {device} (map: {device_map})...")
 
         processor = AutoProcessor.from_pretrained(QWEN_MODEL_NAME, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
             QWEN_MODEL_NAME,
-            torch_dtype=torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16,
+            torch_dtype=(
+                torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+                else torch.float16
+            ),
             device_map=device_map,
             trust_remote_code=True
         )
 
-        st.success("✅ Model loaded successfully!")
+        st.success(f"{QWEN_MODEL_NAME} loaded successfully on {device}!")
         return processor, model, device
     except Exception as e:
         st.error(f"Error loading model: {e}")
         st.stop()
+        return None, None, None
 
 processor, model, device = load_qwen_vl_model()
 
-# --- Caption Function ---
-def generate_caption(image: Image.Image, prompt: str = CAPTION_PROMPT) -> str:
+# --- Room Type Inference ---
+def infer_room_type(image: Image.Image, prompt: str = VLM_PROMPT_TEMPLATE):
+    if model is None:
+        return "❌ Model not loaded"
+
     inputs = processor(
         text=prompt,
         images=image.convert("RGB"),
@@ -54,51 +59,94 @@ def generate_caption(image: Image.Image, prompt: str = CAPTION_PROMPT) -> str:
     with torch.no_grad():
         out = model.generate(
             **inputs,
-            max_new_tokens=64,
-            do_sample=False,
-            temperature=0.0
-        )
-
-    caption = processor.decode(out[0], skip_special_tokens=True).strip()
-    return caption
-
-# --- Inference ---
-def infer_room_type_open(image: Image.Image):
-    # Ask Qwen directly for room type
-    prompt = "What type of room is shown in this image? Respond in a few words."
-    inputs = processor(
-        text=prompt,
-        images=image.convert("RGB"),
-        return_tensors="pt"
-    ).to(device)
-
-    with torch.no_grad():
-        out = model.generate(
-            **inputs,
-            max_new_tokens=32,
+            max_new_tokens=50,
             do_sample=False,
             temperature=0.0
         )
 
     answer = processor.decode(out[0], skip_special_tokens=True).strip()
+
+    # Basic cleanup (remove markdown/code block artifacts if present)
+    if "```" in answer:
+        answer = answer.split("```")[-1].strip()
     return answer
 
-# --- Streamlit UI ---
-st.set_page_config(layout="wide", page_title="Open-Vocab Room Detector (Qwen2.5-VL)")
-st.title("🏠 Open-Vocabulary Room Detector")
 
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png", "webp"])
+# --- Streamlit App Layout ---
+st.set_page_config(layout="wide", page_title="Qwen2.5-VL Room Type Classifier")
+st.title("🧠 Qwen2.5-VL Room Type Classifier (No Predefined Labels)")
 
-if uploaded_file:
-    img = Image.open(uploaded_file).convert("RGB")
-    st.image(img, caption="Uploaded image", use_column_width=True)
+# --- 1. Upload Data ---
+st.header("1. Upload Your Images")
+uploaded_files = st.file_uploader(
+    "Choose one or more image files",
+    type=["png", "jpg", "jpeg", "webp"],
+    accept_multiple_files=True
+)
 
-    if st.button("🔎 Detect Room Type"):
-        with st.spinner("Generating caption with Qwen2.5-VL..."):
-            caption = generate_caption(img)
+# Session state
+if "selected_image_data" not in st.session_state:
+    st.session_state.selected_image_data = None
+if "classification_result" not in st.session_state:
+    st.session_state.classification_result = None
+if "last_uploaded_files" not in st.session_state:
+    st.session_state.last_uploaded_files = []
 
-        result = infer_room_type(caption)
+# Reset selection if files changed
+if uploaded_files and (st.session_state.last_uploaded_files != uploaded_files):
+    st.session_state.selected_image_data = None
+    st.session_state.classification_result = None
+    st.session_state.last_uploaded_files = uploaded_files
 
-        st.markdown(f"**Caption:** {result['caption']}")
-        st.markdown(f"**Inferred Room Type:** {result['room_type']}")
-        st.markdown(f"**Reasoning:** {result['reasoning']}")
+# --- 2. Display Images ---
+if uploaded_files:
+    st.header("2. Select an Image for Classification")
+    cols_per_row = 5
+    image_cols = st.columns(cols_per_row)
+    for i, uploaded_file in enumerate(uploaded_files):
+        with image_cols[i % cols_per_row]:
+            try:
+                img_data = Image.open(io.BytesIO(uploaded_file.read())).convert("RGB")
+                uploaded_file.seek(0)
+                st.image(img_data, caption=f"{uploaded_file.name[:20]}...", width=150)
+                if st.button(f"Select Image {i+1}", key=f"select_btn_{i}"):
+                    st.session_state.selected_image_data = uploaded_file
+                    st.session_state.classification_result = None
+                    st.rerun()
+            except Exception as e:
+                st.error(f"Error processing {uploaded_file.name}: {e}")
+
+# --- 3. Run Classification ---
+if st.session_state.selected_image_data:
+    st.markdown("---")
+    st.header("3. Classify Selected Image")
+    st.write(f"Model: **{QWEN_MODEL_NAME}** running on **{device}**")
+
+    selected_file = st.session_state.selected_image_data
+    st.write(f"**Selected Image:** `{selected_file.name}`")
+
+    selected_file.seek(0)
+    selected_img = Image.open(io.BytesIO(selected_file.read()))
+    st.image(selected_img, caption="Image to be classified", width=400)
+
+    if st.button("🚀 Run Room Type Inference"):
+        if model is None:
+            st.error("Model not loaded.")
+        else:
+            with st.spinner("🔎 Inferring room type..."):
+                try:
+                    result = infer_room_type(selected_img)
+                    st.session_state.classification_result = result
+                except Exception as e:
+                    st.session_state.classification_result = f"❌ Error: {e}"
+            st.rerun()
+
+# --- 4. Show Results ---
+if st.session_state.classification_result:
+    result = st.session_state.classification_result
+    st.success("✅ Inference Complete!")
+    st.subheader("Predicted Room Type")
+    st.markdown(f"**{result}**")
+
+if not uploaded_files:
+    st.info("Please upload one or more images to begin.")
