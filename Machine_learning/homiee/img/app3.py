@@ -56,8 +56,7 @@ def predict_with_vlm(image: Image.Image) -> str:
 
     prompt = (
         "<image>\n"
-        "Identify the type of room shown in this image. "
-        "Answer with only the room type. Provide options A, B, C with different plausible answers."
+        "Analyze this image and classify the room type. Which room is this?"
     )
 
     inputs = vlm_processor(
@@ -76,20 +75,7 @@ def predict_with_vlm(image: Image.Image) -> str:
 
     raw_answer = vlm_processor.batch_decode(out, skip_special_tokens=True)[0].strip()
 
-    # --- Post-processing ---
-    # Extract "A.", "B.", "C." parts only
-    matches = re.findall(r"(A\..*?)(?=B\.|$)|"
-                         r"(B\..*?)(?=C\.|$)|"
-                         r"(C\..*?)(?=D\.|$)", raw_answer, re.DOTALL)
-
-    # Flatten and clean
-    choices = [m.strip() for tup in matches for m in tup if m]
-
-    # Fallback if nothing matched
-    if not choices:
-        return "Unknown"
-
-    return " ".join(choices)
+    return raw_answer
 
 def predict_with_clip(image: Image.Image, candidate_labels: list) -> str:
     if clip_processor is None or clip_model is None:
