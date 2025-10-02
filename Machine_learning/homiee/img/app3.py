@@ -1,105 +1,146 @@
 import streamlit as st
 from PIL import Image
 import torch
-from transformers import AutoProcessor, AutoModelForVision2Seq
+from transformers import (
+    AutoProcessor,
+    AutoModelForVision2Seq,
+    CLIPProcessor,
+    CLIPModel
+)
 
 # ------------------
 # Config
 # ------------------
-MODEL_NAME = "HuggingFaceTB/SmolVLM-500M-Instruct"
+VLM_MODEL_NAME = "HuggingFaceTB/SmolVLM-500M-Instruct"  # fallback: SmolVLM-256M-Instruct
+CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"
+
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ------------------
-# Load model + processor
+# Load Models
 # ------------------
 @st.cache_resource
-def load_model():
+def load_vlm():
     try:
-        processor = AutoProcessor.from_pretrained(MODEL_NAME, trust_remote_code=True)
+        processor = AutoProcessor.from_pretrained(VLM_MODEL_NAME, trust_remote_code=True)
         model = AutoModelForVision2Seq.from_pretrained(
-            MODEL_NAME,
+            VLM_MODEL_NAME,
             torch_dtype=torch.float16 if DEVICE == "cuda" else torch.float32,
             device_map="auto",
             trust_remote_code=True
         )
         return processor, model
     except Exception as e:
-        st.error(f"❌ Error loading model: {e}")
+        st.error(f"❌ Error loading VLM: {e}")
         return None, None
 
-processor, model = load_model()
+@st.cache_resource
+def load_clip():
+    try:
+        clip_model = CLIPModel.from_pretrained(CLIP_MODEL_NAME)
+        clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_NAME)
+        return clip_processor, clip_model
+    except Exception as e:
+        st.error(f"❌ Error loading CLIP: {e}")
+        return None, None
+
+vlm_processor, vlm_model = load_vlm()
+clip_processor, clip_model = load_clip()
 
 # ------------------
-# Prediction function
+# Prediction Functions
 # ------------------
-def predict_room_type(image: Image.Image) -> str:
-    # Stronger, clearer prompt
+def predict_with_vlm(image: Image.Image) -> str:
+    if vlm_processor is None or vlm_model is None:
+        return "Model not loaded"
+
     prompt = (
         "<image>\n"
         "Identify the type of room shown in this image. "
         "Answer with only the room type in 1–3 words (e.g., 'Bedroom', 'Living Room', 'Kitchen')."
     )
 
-    inputs = processor(
+    inputs = vlm_processor(
         text=[prompt],
         images=[image.convert("RGB")],
         return_tensors="pt"
     ).to(DEVICE)
 
     with torch.no_grad():
-        out = model.generate(
+        out = vlm_model.generate(
             **inputs,
             max_new_tokens=32,
             do_sample=False,
             temperature=0.0
         )
 
-    raw_answer = processor.batch_decode(out, skip_special_tokens=True)[0]
+    raw_answer = vlm_processor.batch_decode(out, skip_special_tokens=True)[0]
     answer = raw_answer.strip()
 
-    # --- Post-processing cleanup ---
-    # Remove echoed prompt text
-    if "Identify the type of room" in answer or "What type of room" in answer:
+    # --- Post-processing ---
+    if "Identify the type" in answer or "What type of room" in answer:
         answer = answer.split("\n")[-1]
 
-    # Remove multiple-choice noise
     if "A." in answer:
         answer = answer.split("A.")[0]
 
-    # Keep only first sentence/line
     answer = answer.split("\n")[0].split(".")[0]
-
-    # Limit to 3 words, Title Case
     answer = " ".join(answer.split()[:3]).title()
 
-    # Safety net: discard junk like single characters
     if len(answer) < 3 or not any(c.isalpha() for c in answer):
         answer = "Unknown"
 
     return answer
 
+
+def predict_with_clip(image: Image.Image, candidate_labels: list) -> str:
+    if clip_processor is None or clip_model is None:
+        return "Model not loaded"
+
+    inputs = clip_processor(
+        text=candidate_labels,
+        images=image,
+        return_tensors="pt",
+        padding=True
+    ).to(DEVICE)
+
+    with torch.no_grad():
+        logits_per_image = clip_model(**inputs).logits_per_image
+        probs = logits_per_image.softmax(dim=1).cpu().numpy()[0]
+
+    best_idx = probs.argmax()
+    return f"{candidate_labels[best_idx]} ({probs[best_idx]:.2f})"
+
 # ------------------
 # Streamlit UI
 # ------------------
-st.set_page_config(layout="wide", page_title="SmolVLM Room Classifier")
-st.title("🏠 Room Type Classifier (SmolVLM-256M)")
+st.set_page_config(layout="wide", page_title="SmolVLM + CLIP Room Classifier")
+st.title("🏠 Room Type Classifier with SmolVLM + CLIP")
 
 uploaded_file = st.file_uploader(
     "Upload an image of a room",
     type=["jpg", "jpeg", "png", "webp"]
 )
 
+labels_input = st.text_input(
+    "Enter candidate labels for CLIP (comma-separated):",
+    value="Bedroom, Living Room, Kitchen, Bathroom, Dining Room, Office"
+)
+
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, caption="Uploaded Room Image", width=400)
 
-    if st.button("🔎 Classify Room"):
-        if processor is None or model is None:
-            st.error("❌ Model is not loaded. Check logs.")
-        else:
-            with st.spinner("Analyzing room type..."):
-                result = predict_room_type(image)
-                st.success(f"🏷️ Predicted Room Type: **{result}**")
+    if st.button("🔎 Classify with Both Models"):
+        with st.spinner("Analyzing with SmolVLM..."):
+            vlm_result = predict_with_vlm(image)
+
+        with st.spinner("Analyzing with CLIP..."):
+            candidate_labels = [lbl.strip() for lbl in labels_input.split(",") if lbl.strip()]
+            clip_result = predict_with_clip(image, candidate_labels)
+
+        st.subheader("📊 Results")
+        st.success(f"🧠 **SmolVLM Prediction:** {vlm_result}")
+        st.success(f"🎯 **CLIP Prediction:** {clip_result}")
 else:
     st.info("Please upload a room image to begin.")
-
