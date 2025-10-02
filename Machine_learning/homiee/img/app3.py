@@ -69,29 +69,27 @@ def predict_with_vlm(image: Image.Image) -> str:
     with torch.no_grad():
         out = vlm_model.generate(
             **inputs,
-            max_new_tokens=32,
+            max_new_tokens=64,
             do_sample=False,
             temperature=0.0
         )
 
-    raw_answer = vlm_processor.batch_decode(out, skip_special_tokens=True)[0]
-    answer = raw_answer.strip()
+    raw_answer = vlm_processor.batch_decode(out, skip_special_tokens=True)[0].strip()
 
-    # # --- Post-processing ---
-    # if "Identify the type" in answer or "What type of room" in answer:
-    #     answer = answer.split("\n")[-1]
+    # --- Post-processing ---
+    # Extract "A.", "B.", "C." parts only
+    matches = re.findall(r"(A\..*?)(?=B\.|$)|"
+                         r"(B\..*?)(?=C\.|$)|"
+                         r"(C\..*?)(?=D\.|$)", raw_answer, re.DOTALL)
 
-    # if "A." in answer:
-    #     answer = answer.split("A.")[0]
+    # Flatten and clean
+    choices = [m.strip() for tup in matches for m in tup if m]
 
-    # answer = answer.split("\n")[0].split(".")[0]
-    # answer = " ".join(answer.split()[:3]).title()
+    # Fallback if nothing matched
+    if not choices:
+        return "Unknown"
 
-    # if len(answer) < 3 or not any(c.isalpha() for c in answer):
-    #     answer = "Unknown"
-
-    return answer
-
+    return " ".join(choices)
 
 def predict_with_clip(image: Image.Image, candidate_labels: list) -> str:
     if clip_processor is None or clip_model is None:
