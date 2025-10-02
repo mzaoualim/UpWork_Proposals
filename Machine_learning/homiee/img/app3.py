@@ -6,7 +6,7 @@ from transformers import AutoProcessor, AutoModelForVision2Seq
 # ------------------
 # Config
 # ------------------
-MODEL_NAME = "HuggingFaceTB/SmolVLM-256M-Instruct"
+MODEL_NAME = "HuggingFaceTB/SmolVLM-500M-Instruct"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ------------------
