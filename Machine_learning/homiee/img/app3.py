@@ -33,7 +33,12 @@ processor, model = load_model()
 # Prediction function
 # ------------------
 def predict_room_type(image: Image.Image) -> str:
-    prompt = "<image>\nWhat type of room is shown in this image? Respond in 1-3 words only."
+    # Stronger, clearer prompt
+    prompt = (
+        "<image>\n"
+        "Identify the type of room shown in this image. "
+        "Answer with only the room type in 1–3 words (e.g., 'Bedroom', 'Living Room', 'Kitchen')."
+    )
 
     inputs = processor(
         text=[prompt],
@@ -50,27 +55,28 @@ def predict_room_type(image: Image.Image) -> str:
         )
 
     raw_answer = processor.batch_decode(out, skip_special_tokens=True)[0]
-
-    # -------------------
-    # Cleanup postprocessing
-    # -------------------
     answer = raw_answer.strip()
 
-    # Remove the original prompt if echoed
-    if "What type of room" in answer:
+    # --- Post-processing cleanup ---
+    # Remove echoed prompt text
+    if "Identify the type of room" in answer or "What type of room" in answer:
         answer = answer.split("\n")[-1]
 
-    # Drop multiple-choice noise (e.g., "A. Bedroom. B. Bedroom...")
-    answer = answer.split("A.")[0] if "A." in answer else answer
+    # Remove multiple-choice noise
+    if "A." in answer:
+        answer = answer.split("A.")[0]
 
-    # Keep only the first sentence/line
+    # Keep only first sentence/line
     answer = answer.split("\n")[0].split(".")[0]
 
-    # Limit to 3 words max
-    answer = " ".join(answer.split()[:3])
+    # Limit to 3 words, Title Case
+    answer = " ".join(answer.split()[:3]).title()
 
-    return answer.strip().title()
+    # Safety net: discard junk like single characters
+    if len(answer) < 3 or not any(c.isalpha() for c in answer):
+        answer = "Unknown"
 
+    return answer
 
 # ------------------
 # Streamlit UI
@@ -96,3 +102,4 @@ if uploaded_file is not None:
                 st.success(f"🏷️ Predicted Room Type: **{result}**")
 else:
     st.info("Please upload a room image to begin.")
+
