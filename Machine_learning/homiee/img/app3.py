@@ -57,7 +57,7 @@ def predict_with_vlm(image: Image.Image) -> str:
     prompt = (
         "<image>\n"
         "Identify the type of room shown in this image. "
-        "Answer with only the room type in 1–3 words (e.g., 'Bedroom', 'Living Room', 'Kitchen')."
+        "Answer with only the room type."
     )
 
     inputs = vlm_processor(
@@ -77,18 +77,18 @@ def predict_with_vlm(image: Image.Image) -> str:
     raw_answer = vlm_processor.batch_decode(out, skip_special_tokens=True)[0]
     answer = raw_answer.strip()
 
-    # --- Post-processing ---
-    if "Identify the type" in answer or "What type of room" in answer:
-        answer = answer.split("\n")[-1]
+    # # --- Post-processing ---
+    # if "Identify the type" in answer or "What type of room" in answer:
+    #     answer = answer.split("\n")[-1]
 
-    if "A." in answer:
-        answer = answer.split("A.")[0]
+    # if "A." in answer:
+    #     answer = answer.split("A.")[0]
 
-    answer = answer.split("\n")[0].split(".")[0]
-    answer = " ".join(answer.split()[:3]).title()
+    # answer = answer.split("\n")[0].split(".")[0]
+    # answer = " ".join(answer.split()[:3]).title()
 
-    if len(answer) < 3 or not any(c.isalpha() for c in answer):
-        answer = "Unknown"
+    # if len(answer) < 3 or not any(c.isalpha() for c in answer):
+    #     answer = "Unknown"
 
     return answer
 
