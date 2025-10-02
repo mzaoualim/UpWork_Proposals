@@ -57,7 +57,7 @@ def predict_with_vlm(image: Image.Image) -> str:
     prompt = (
         "<image>\n"
         "Identify the type of room shown in this image. "
-        "Answer with only the room type."
+        "Answer with only the room type. Provide options A, B, C with different plausible answers."
     )
 
     inputs = vlm_processor(
