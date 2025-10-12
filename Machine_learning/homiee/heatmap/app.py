@@ -19,7 +19,7 @@ st.set_page_config(
 # Coordinates for centering the map on the general area covered by the GeoJSON
 # Based on the coordinates in boundaries.geojson (Sydney/NSW area)
 MAP_CENTER = (-33.95, 151.00) 
-MAP_ZOOM = 11
+MAP_ZOOM = 13
 
 @st.cache_data
 def load_data():
