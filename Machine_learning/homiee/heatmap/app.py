@@ -334,3 +334,70 @@ if df is not None and boundaries is not None:
                     color: #444444;
                     font-family: sans-serif;
                     font-size: 14px;
+                    padding: 6px;
+                    border: 1px solid #aaa;
+                    box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
+                """,
+            ),
+            highlight_function=lambda x: {'weight': 3, 'color': 'white', 'fillOpacity': 0.9}
+        ).add_to(m)
+
+        
+        # Add static text labels (DivIcon Markers)
+        for feature in filtered_geojson['features']:
+            locality = feature['properties'].get('name')
+            formatted_value = feature['properties'].get('formatted_value')
+            center = get_polygon_center(feature['geometry'])
+
+            if formatted_value != 'N/A':
+                text_color = 'blue'
+                
+                html_label = f"""
+                <div style="text-align: center; white-space: nowrap; font-weight: bold; font-size: 10px; color: {text_color}; text-shadow: 0 0 2px white, 0 0 2px white; mix-blend-mode: difference;">
+                    {locality}<br>
+                    {formatted_value}
+                </div>
+                """
+                
+                folium.Marker(
+                    location=center,
+                    icon=DivIcon(
+                        icon_size=(150, 36),
+                        icon_anchor=(75, 18),
+                        html=html_label
+                    )
+                ).add_to(m)
+
+
+        # Display the map in Streamlit
+        st_folium(m, height=650, width="100%")
+        
+        # Display summary statistics
+        st.subheader("Summary of Filtered Data")
+        
+        if not filtered_df.empty:
+            mean_val = filtered_df[data_column].mean()
+            min_val = filtered_df[data_column].min()
+            max_val = filtered_df[data_column].max()
+            
+            if selected_metric == 'Median Price':
+                mean_str = f"${mean_val:,.0f}"
+                min_str = f"${min_val:,.0f}"
+                max_str = f"${max_val:,.0f}"
+            else:
+                mean_display = filtered_df['PercentChange_Display'].mean()
+                min_display = filtered_df['PercentChange_Display'].min()
+                max_display = filtered_df['PercentChange_Display'].max()
+
+                mean_str = f"{mean_display:.2f}%"
+                min_str = f"{min_display:.2f}%"
+                max_str = f"{max_display:.2f}%"
+
+            col1, col2, col3 = st.columns(3)
+            col1.metric(f"Average {selected_metric}", mean_str)
+            col2.metric(f"Min Area {selected_metric}", min_str)
+            col3.metric(f"Max Area {selected_metric}", max_str)
+            
+            st.markdown(f"**Data displayed for {selected_type} in {selected_year}.**")
+        else:
+            st.warning(f"No data points found for {selected_type} in {selected_year} in the selected localities.")
