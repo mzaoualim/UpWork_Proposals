@@ -31,11 +31,11 @@ def load_data():
     """
     try:
         # Load GeoJSON boundaries using standard Python file I/O
-        with open("boundaries.geojson", "r") as f:
+        with open("Machine_learning/homiee/heatmap/boundaries.geojson", "r") as f:
             boundaries = json.load(f)
         
         # Load CSV data directly using pandas read_csv from file path
-        data = pd.read_csv("median_5loc_df.csv")
+        data = pd.read_csv("Machine_learning/homiee/heatmap/median_5loc_df.csv")
         
         # Data Cleaning and Column Preparation
         data.columns = [col.strip() for col in data.columns]
