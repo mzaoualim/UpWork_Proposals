@@ -3,9 +3,10 @@ import pandas as pd
 import numpy as np
 import folium
 from folium.plugins import HeatMap
-from streamlit_folium import st_folium
+from folium.features import DivIcon # Needed for custom labels on the map
+import colorsys
 
-# --- 1. CONFIGURATION AND DATA GENERATION ---
+# --- 1. CONFIGURATION AND DATA GENERATION (Unchanged from previous version) ---
 
 st.set_page_config(
     page_title="Australian Property Heatmap",
@@ -14,6 +15,7 @@ st.set_page_config(
 )
 
 # Coordinates for 5 major Australian localities (used for synthetic data generation)
+# Note: I am using the general city coordinates as placeholders for the "locality centers"
 LOCATIONS = {
     'Sydney': (-33.85, 151.21),
     'Melbourne': (-37.81, 144.96),
@@ -43,8 +45,9 @@ def generate_synthetic_data(n_points_per_locality=100):
                 # Generate multiple points slightly offset from the center
                 for _ in range(n_points_per_locality):
                     # Add small random offset to simulate different properties
-                    lat_offset = np.random.uniform(-0.1, 0.1)
-                    lon_offset = np.random.uniform(-0.1, 0.1)
+                    # Spread the points slightly around the city center
+                    lat_offset = np.random.uniform(-0.3, 0.3) 
+                    lon_offset = np.random.uniform(-0.3, 0.3)
                     
                     # Calculate median price with some noise
                     price_noise = np.random.normal(0, 50000)
@@ -69,10 +72,38 @@ def generate_synthetic_data(n_points_per_locality=100):
 # Load data
 df = generate_synthetic_data()
 
+# --- 2. UTILITY FUNCTIONS FOR CHOROPLETH-STYLE VISUALIZATION ---
 
-# --- 2. STREAMLIT APP LAYOUT AND FILTERS ---
+def get_color_from_price(price, min_price, max_price):
+    """Maps a price value to a blue color gradient (light to dark)."""
+    if min_price == max_price:
+        # If all prices are the same, use a neutral blue
+        return '#0070c0' 
+        
+    # Normalize price to a 0-1 range
+    normalized_price = (price - min_price) / (max_price - min_price)
+    
+    # We want higher prices to be DARKER blue.
+    # In HSL, Hue for blue is ~240. We vary Lightness (L) from 0.7 (light) to 0.3 (dark).
+    # Since normalized_price is 0 to 1 (min to max), we reverse it for L:
+    # L = 0.7 - (normalized_price * 0.4) 
+    
+    # Let's use a simpler approach: Interpolate between two hex colors: Light Blue to Dark Blue
+    # Light: #ADD8E6 (RGB 173, 216, 230) -> Dark: #104E8B (RGB 16, 78, 139)
+    r1, g1, b1 = (173, 216, 230)
+    r2, g2, b2 = (16, 78, 139)
+    
+    # Interpolate (r, g, b) values. We want lower price to be light, higher price to be dark.
+    r = int(r1 + normalized_price * (r2 - r1))
+    g = int(g1 + normalized_price * (g2 - g1))
+    b = int(b1 + normalized_price * (b2 - b1))
+    
+    return f'#{r:02x}{g:02x}{b:02x}'
 
-st.title("🏡 Australian Property Price Heatmap Analyzer")
+
+# --- 3. STREAMLIT APP LAYOUT AND FILTERS ---
+
+st.title("🏡 Australian Property Price Map (Choropleth Style)")
 
 # Sidebar for user filtering
 with st.sidebar:
@@ -106,14 +137,14 @@ with st.sidebar:
     )
     
     st.markdown("""---""")
-    st.markdown("**Visualization Details**")
-    st.info("The heatmap color intensity is weighted by the Median Price.")
+    st.markdown("**Visualization Style**")
+    st.info("This map uses custom color-coded labels to simulate suburb-level data aggregation, similar to a Choropleth map.")
 
 
-# --- 3. FILTERING DATA AND PREPARING MAP DATA ---
+# --- 4. FILTERING DATA AND PREPARING MAP DATA ---
 
 if not selected_localities or not selected_types:
-    st.error("Please select at least one Locality and one Property Type to generate the heatmap.")
+    st.error("Please select at least one Locality and one Property Type to generate the map.")
 else:
     # Apply filters
     filtered_df = df[
@@ -122,63 +153,86 @@ else:
         (df['PropertyType'].isin(selected_types))
     ].copy()
 
-    # --- 4. MAP GENERATION LOGIC ---
+    # --- 5. MAP GENERATION LOGIC ---
 
     if filtered_df.empty:
         st.warning(f"No data available for the selected criteria in {selected_year}.")
     else:
-        # Calculate the center of the filtered data for map centering
-        center_lat = filtered_df['Lat'].mean()
-        center_lon = filtered_df['Lon'].mean()
         
+        # Aggregate the data by Locality to get a single data point (mean price) for visualization
+        grouped_df = filtered_df.groupby('Locality').agg(
+            MeanPrice=('MedianPrice', 'mean'),
+            Lat=('Lat', 'mean'), 
+            Lon=('Lon', 'mean')
+        ).reset_index()
+
+        # Calculate map center based on grouped data
+        center_lat = grouped_df['Lat'].mean()
+        center_lon = grouped_df['Lon'].mean()
+        
+        # Determine min/max price for color scaling
+        min_price = grouped_df['MeanPrice'].min()
+        max_price = grouped_df['MeanPrice'].max()
+
         # Create a Folium map object
         m = folium.Map(
             location=[center_lat, center_lon], 
-            zoom_start=6, 
-            tiles="OpenStreetMap" # Using OpenStreetMap tiles
+            zoom_start=5, # Zoom out slightly to see all Australian cities
+            tiles="CartoDB positron" # Clean, light tileset for better visibility
         )
 
-        # Prepare data for HeatMap plugin: [[lat, lon, weight], ...]
-        # We need to normalize the price to ensure the heatmap intensity is visible and useful.
-        # Use min-max scaling for the weights (0 to 1)
-        min_price = filtered_df['MedianPrice'].min()
-        max_price = filtered_df['MedianPrice'].max()
-        
-        # Avoid division by zero if all prices are identical
-        price_range = max_price - min_price
-        
-        if price_range > 0:
-            filtered_df['Weight'] = (filtered_df['MedianPrice'] - min_price) / price_range
-        else:
-            filtered_df['Weight'] = 0.5 # Default weight if prices are all the same
+        # Iterate through grouped data and add custom DivIcon markers
+        for index, row in grouped_df.iterrows():
+            price = row['MeanPrice']
+            locality_name = row['Locality']
+            
+            # Get color based on price
+            fill_color = get_color_from_price(price, min_price, max_price)
+            text_color = '#FFFFFF' if fill_color in ['#104E8B'] else '#000000' # Dark text on light background
+            
+            # Format price for display
+            formatted_price = f"${price:,.0f}"
+            
+            # --- Custom HTML/CSS for the Label (DivIcon) ---
+            html = f"""
+                <div style="
+                    background-color: {fill_color};
+                    color: {text_color};
+                    border: 1px solid #000000;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    font-size: 10px;
+                    font-weight: bold;
+                    white-space: nowrap;
+                    text-align: center;
+                    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+                ">
+                    {locality_name}<br>
+                    <span style="font-size: 12px;">{formatted_price}</span>
+                </div>
+            """
 
-        # Create the list of [Latitude, Longitude, Weight]
-        heat_data = filtered_df[['Lat', 'Lon', 'Weight']].values.tolist()
-        
-        # Add the HeatMap layer to the map
-        HeatMap(
-            heat_data,
-            name='Property Price Heatmap',
-            radius=20,          # Adjust radius for better visual grouping
-            blur=15,            # Adjust blur for smooth transition
-            min_opacity=0.3,
-            max_val=1.0         # Max intensity corresponds to max weight (max price)
-        ).add_to(m)
+            # Create the custom icon
+            icon = DivIcon(
+                icon_size=(150, 36), # Adjusted size
+                icon_anchor=(75, 18), # Center the icon
+                html=html
+            )
+            
+            # Add the marker to the map
+            folium.Marker(
+                location=[row['Lat'], row['Lon']],
+                icon=icon
+            ).add_to(m)
 
         # Display the map in Streamlit
-        st_folium(m, height=600, width="100%")
+        st_folium(m, height=650, width="100%")
         
         # Display summary statistics
         st.subheader("Summary of Filtered Data")
         col1, col2, col3 = st.columns(3)
-        col1.metric("Average Median Price", f"${filtered_df['MedianPrice'].mean():,.0f}")
-        col2.metric("Min Median Price", f"${min_price:,.0f}")
-        col3.metric("Max Median Price", f"${max_price:,.0f}")
+        col1.metric("Average Median Price", f"${grouped_df['MeanPrice'].mean():,.0f}")
+        col2.metric("Min Area Price", f"${min_price:,.0f}")
+        col3.metric("Max Area Price", f"${max_price:,.0f}")
         
-        st.dataframe(
-            filtered_df[['Locality', 'PropertyType', 'Year', 'MedianPrice']].rename(
-                columns={'MedianPrice': 'Median Price ($)'}
-            ).sort_values(by='Median Price ($)', ascending=False).reset_index(drop=True),
-            use_container_width=True,
-            hide_index=True,
-        )
+        st.markdown(f"**Data displayed for {', '.join(selected_types)} in {selected_year}.**")
