@@ -1,234 +1,330 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import folium
+import json
+import io
+import branca.colormap as cm 
 from streamlit_folium import st_folium 
-from folium.plugins import HeatMap
-from folium.features import DivIcon # Needed for custom labels on the map
-import colorsys
+from folium.features import GeoJsonTooltip, GeoJson 
+import numpy as np
 
-# --- 1. CONFIGURATION AND DATA GENERATION (Unchanged from previous version) ---
+# --- 1. CONFIGURATION AND DATA LOADING ---
 
 st.set_page_config(
-    page_title="Australian Property Heatmap",
+    page_title="Australian Property Choropleth",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Coordinates for 5 major Australian localities (used for synthetic data generation)
-# Note: I am using the general city coordinates as placeholders for the "locality centers"
-LOCATIONS = {
-    'Sydney': (-33.85, 151.21),
-    'Melbourne': (-37.81, 144.96),
-    'Brisbane': (-27.47, 153.02),
-    'Perth': (-31.95, 115.86),
-    'Adelaide': (-34.92, 138.59),
-}
-PROPERTY_TYPES = ['House', 'Unit', 'Townhouse']
-YEARS = [2022, 2023, 2024]
-BASE_PRICE = 800000
+# Coordinates for centering the map on the general area covered by the GeoJSON
+# Based on the coordinates in boundaries.geojson (Sydney/NSW area)
+MAP_CENTER = (-33.95, 151.00) 
+MAP_ZOOM = 11
 
 @st.cache_data
-def generate_synthetic_data(n_points_per_locality=100):
-    """Generates a synthetic DataFrame for property prices with Lat/Lon."""
-    data = []
-    
-    for locality, (base_lat, base_lon) in LOCATIONS.items():
-        for year in YEARS:
-            for prop_type in PROPERTY_TYPES:
-                # Determine price base and volatility
-                price_multiplier = 1.0 + (year - 2022) * 0.08  # 8% annual growth
-                if prop_type == 'Unit':
-                    price_multiplier *= 0.7
-                elif prop_type == 'Townhouse':
-                    price_multiplier *= 0.85
-                
-                # Generate multiple points slightly offset from the center
-                for _ in range(n_points_per_locality):
-                    # Add small random offset to simulate different properties
-                    # Spread the points slightly around the city center
-                    lat_offset = np.random.uniform(-0.3, 0.3) 
-                    lon_offset = np.random.uniform(-0.3, 0.3)
-                    
-                    # Calculate median price with some noise
-                    price_noise = np.random.normal(0, 50000)
-                    median_price = int(BASE_PRICE * price_multiplier + price_noise)
-                    median_price = max(100000, median_price) # Ensure price is reasonable
-                    
-                    data.append({
-                        'Locality': locality,
-                        'Year': year,
-                        'PropertyType': prop_type,
-                        'MedianPrice': median_price,
-                        'Lat': base_lat + lat_offset,
-                        'Lon': base_lon + lon_offset
-                    })
-    
-    df = pd.DataFrame(data)
-    # Ensure Lat/Lon columns are floats
-    df['Lat'] = df['Lat'].astype(float)
-    df['Lon'] = df['Lon'].astype(float)
-    return df
-
-# Load data
-df = generate_synthetic_data()
-
-# --- 2. UTILITY FUNCTIONS FOR CHOROPLETH-STYLE VISUALIZATION ---
-
-def get_color_from_price(price, min_price, max_price):
-    """Maps a price value to a blue color gradient (light to dark)."""
-    if min_price == max_price:
-        # If all prices are the same, use a neutral blue
-        return '#0070c0' 
+def load_data():
+    """Loads the GeoJSON boundaries and CSV property data."""
+    try:
+        # Load GeoJSON boundaries
+        geojson_data_raw = st.file_contents("boundaries.geojson")
+        boundaries = json.loads(geojson_data_raw)
         
-    # Normalize price to a 0-1 range
-    normalized_price = (price - min_price) / (max_price - min_price)
-    
-    # We want higher prices to be DARKER blue.
-    # Light: #ADD8E6 (RGB 173, 216, 230) -> Dark: #104E8B (RGB 16, 78, 139)
-    r1, g1, b1 = (173, 216, 230)
-    r2, g2, b2 = (16, 78, 139)
-    
-    # Interpolate (r, g, b) values. We want lower price to be light, higher price to be dark.
-    r = int(r1 + normalized_price * (r2 - r1))
-    g = int(g1 + normalized_price * (g2 - g1))
-    b = int(b1 + normalized_price * (b2 - b1))
-    
-    return f'#{r:02x}{g:02x}{b:02x}'
+        # Load CSV data
+        csv_data_raw = st.file_contents("median_5loc_df.csv")
+        data = pd.read_csv(io.StringIO(csv_data_raw))
+        
+        # Data Cleaning and Column Preparation
+        data.columns = [col.strip() for col in data.columns]
+        data.rename(columns={
+            'Locality Name': 'Locality',
+            'Median Price': 'MedianPrice',
+            'Percent Change': 'PercentChange',
+            'Type': 'PropertyType'
+        }, inplace=True)
 
+        # Convert PercentChange to percentage for better display (e.g., 0.02 to 2.0%)
+        # Note: We keep the float for calculations, but the display will be %
+        data['PercentChange_Display'] = data['PercentChange'] * 100
+        data['MedianPrice'] = data['MedianPrice'].astype(int)
+        
+        return boundaries, data
+
+    except Exception as e:
+        st.error(f"Error loading or processing data files: {e}")
+        st.info("Please ensure 'boundaries.geojson' and 'median_5loc_df.csv' are uploaded.")
+        return None, None
+
+boundaries, df = load_data()
+
+# --- 2. UTILITY FUNCTIONS FOR COLORMAPS ---
+
+def create_color_map(metric, data_series):
+    """Creates a Folium-compatible colormap based on the selected metric."""
+    if data_series.empty:
+        # Return a simple map if data is empty to prevent errors
+        return cm.linear.PuBu.scale(0, 1)
+
+    # 1. Median Price (Sequential - Blue)
+    if metric == 'Median Price':
+        min_val, max_val = data_series.min(), data_series.max()
+        if min_val == max_val: # Handle edge case where all values are the same
+             min_val, max_val = min_val * 0.9, max_val * 1.1
+
+        colormap = cm.linear.YlGnBu.scale(min_val, max_val)
+        colormap.caption = 'Median Property Price (AUD)'
+        return colormap
+    
+    # 2. Percent Change (Diverging - Red/Yellow/Green)
+    elif metric == 'Percent Change':
+        # Find the max absolute deviation from zero for a balanced diverging scale
+        max_abs = max(abs(data_series.min()), abs(data_series.max()))
+        
+        # Use RdYlGn for price changes (Red = negative, Yellow = neutral, Green = positive)
+        # Note: We scale from -max_abs to +max_abs to ensure zero is the center (yellow)
+        colormap = cm.linear.RdYlGn.scale(-max_abs, max_abs)
+        colormap.caption = 'Year-over-Year Percent Change (%)'
+        return colormap
 
 # --- 3. STREAMLIT APP LAYOUT AND FILTERS ---
 
-st.title("🏡 Australian Property Price Map (Choropleth Style)")
+st.title("🗺️ Australian Property Choropleth Map")
 
 # Sidebar for user filtering
 with st.sidebar:
-    st.header("Filter Options")
+    st.header("Data & Map Filters")
 
-    # Filter 1: Year
-    selected_year = st.slider(
-        "Select Year",
-        min_value=min(YEARS),
-        max_value=max(YEARS),
-        value=max(YEARS),
-        step=1
-    )
+    if df is not None:
+        # Filter 1: Metric Selection (Key change)
+        metric_options = ['Median Price', 'Percent Change']
+        selected_metric = st.radio(
+            "Select Metric to Visualize",
+            options=metric_options,
+            index=0, # Default to Median Price
+        )
+        
+        # Filter 2: Year
+        all_years = sorted(df['Year'].unique())
+        selected_year = st.slider(
+            "Select Year",
+            min_value=min(all_years),
+            max_value=max(all_years),
+            value=max(all_years),
+            step=1
+        )
 
-    # Filter 2: Locality Names
-    all_localities = sorted(df['Locality'].unique())
-    selected_localities = st.multiselect(
-        "Select Localities",
-        options=all_localities,
-        default=all_localities,
-        placeholder="Choose up to 5 localities"
-    )
-
-    # Filter 3: Property Type
-    all_types = sorted(df['PropertyType'].unique())
-    selected_types = st.multiselect(
-        "Select Property Types",
-        options=all_types,
-        default=['House'],
-        placeholder="Choose property types"
-    )
-    
+        # Filter 3: Property Type
+        all_types = sorted(df['PropertyType'].unique())
+        # Default to the first one available, or prompt user if list is empty
+        default_type = all_types[0] if all_types else None
+        selected_type = st.selectbox(
+            "Select Property Type",
+            options=all_types,
+            index=all_types.index(default_type) if default_type in all_types else 0,
+        )
+        
+        # Filter 4: Locality Names (Default to all)
+        all_localities = sorted(df['Locality'].unique())
+        
+        # CRITICAL: Default to ALL localities as requested
+        selected_localities = st.multiselect(
+            "Select Localities",
+            options=all_localities,
+            default=all_localities,
+            placeholder="Choose localities to display"
+        )
+        
     st.markdown("""---""")
-    st.markdown("**Visualization Style**")
-    st.info("This map uses custom color-coded labels to simulate suburb-level data aggregation, similar to a Choropleth map.")
-
+    st.markdown("**Visualization Note**")
+    st.info("The map colors the local government area boundaries based on the selected property metric.")
 
 # --- 4. FILTERING DATA AND PREPARING MAP DATA ---
 
-if not selected_localities or not selected_types:
-    st.error("Please select at least one Locality and one Property Type to generate the map.")
-else:
-    # Apply filters
-    filtered_df = df[
-        (df['Year'] == selected_year) &
-        (df['Locality'].isin(selected_localities)) &
-        (df['PropertyType'].isin(selected_types))
-    ].copy()
-
-    # --- 5. MAP GENERATION LOGIC ---
-
-    if filtered_df.empty:
-        st.warning(f"No data available for the selected criteria in {selected_year}.")
+if df is not None and boundaries is not None:
+    if not selected_localities:
+        st.error("Please select at least one Locality to display data.")
     else:
-        
-        # Aggregate the data by Locality to get a single data point (mean price) for visualization
-        grouped_df = filtered_df.groupby('Locality').agg(
-            MeanPrice=('MedianPrice', 'mean'),
-            Lat=('Lat', 'mean'), 
-            Lon=('Lon', 'mean')
-        ).reset_index()
+        # Apply all filters
+        filtered_df = df[
+            (df['Year'] == selected_year) &
+            (df['Locality'].isin(selected_localities)) &
+            (df['PropertyType'] == selected_type)
+        ].copy()
 
-        # Calculate map center based on grouped data
-        center_lat = grouped_df['Lat'].mean()
-        center_lon = grouped_df['Lon'].mean()
+        # Prepare the final mapping data (Locality name -> Value)
         
-        # Determine min/max price for color scaling
-        min_price = grouped_df['MeanPrice'].min()
-        max_price = grouped_df['MeanPrice'].max()
+        # Select the correct data column based on the selected metric
+        if selected_metric == 'Median Price':
+            data_column = 'MedianPrice'
+            tooltip_column = 'MedianPrice'
+            tooltip_format = '${:,.0f}'
+        else: # Percent Change
+            data_column = 'PercentChange' # Use raw float for Colormap scaling
+            tooltip_column = 'PercentChange_Display' # Use the % display column for tooltips
+            tooltip_format = '{:.2f}%'
 
-        # Create a Folium map object
+
+        # Create the mapping dictionary: {Locality Name: Value}
+        mapping_data = filtered_df.set_index('Locality')[data_column].to_dict()
+
+        # --- 5. MAP GENERATION LOGIC (Choropleth) ---
+
         m = folium.Map(
-            location=[center_lat, center_lon], 
-            zoom_start=5, # Zoom out slightly to see all Australian cities
-            tiles="CartoDB positron" # Clean, light tileset for better visibility
+            location=MAP_CENTER, 
+            zoom_start=MAP_ZOOM,
+            tiles="CartoDB positron" 
         )
 
-        # Iterate through grouped data and add custom DivIcon markers
-        for index, row in grouped_df.iterrows():
-            price = row['MeanPrice']
-            locality_name = row['Locality']
-            
-            # Get color based on price
-            fill_color = get_color_from_price(price, min_price, max_price)
-            text_color = '#FFFFFF' if price > (min_price + max_price) / 2 else '#000000' # Simple rule for contrast
-            
-            # Format price for display
-            formatted_price = f"${price:,.0f}"
-            
-            # --- Custom HTML/CSS for the Label (DivIcon) ---
-            html = f"""
-                <div style="
-                    background-color: {fill_color};
-                    color: {text_color};
-                    border: 1px solid #000000;
-                    border-radius: 4px;
-                    padding: 4px 8px;
-                    font-size: 10px;
-                    font-weight: bold;
-                    white-space: nowrap;
-                    text-align: center;
-                    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-                ">
-                    {locality_name}<br>
-                    <span style="font-size: 12px;">{formatted_price}</span>
-                </div>
-            """
+        # Create the color map
+        colormap = create_color_map(selected_metric, filtered_df[data_column])
+        
+        # Add Colormap to the map
+        m.add_child(colormap)
 
-            # Create the custom icon
-            icon = DivIcon(
-                icon_size=(150, 36), # Adjusted size
-                icon_anchor=(75, 18), # Center the icon
-                html=html
-            )
+        # Filter GeoJSON features to only include selected localities
+        filtered_features = [
+            feature for feature in boundaries['features']
+            if feature['properties'].get('name') in selected_localities
+        ]
+        
+        # Create a filtered GeoJSON object
+        filtered_geojson = {
+            'type': 'FeatureCollection',
+            'features': filtered_features
+        }
+
+        # --- Choropleth Layer ---
+        folium.Choropleth(
+            geo_data=filtered_geojson,
+            data=filtered_df, # Dataframe for lookup
+            columns=['Locality', data_column], # Key column and value column
+            key_on='properties.name', # Key in the GeoJSON (must match Locality name)
+            fill_color=colormap.get_name(), # Use the colormap name (e.g., 'YlGnBu')
+            line_opacity=0.5,
+            highlight=True,
+            legend_name=colormap.caption,
+            name=selected_metric,
+        ).add_to(m)
+
+        # --- Tooltip Layer (Shows specific data on hover) ---
+        
+        # Merge the data back into the GeoJSON features for the Tooltip
+        # We need the formatted data (Median Price as string, Percent Change as %)
+        
+        # Create a formatted data map for the Tooltip (Locality: Formatted Value)
+        # Note: We must handle the two different columns here (raw vs display)
+        
+        def format_value(row):
+            val = row[tooltip_column]
+            if selected_metric == 'Median Price':
+                return f"${val:,.0f}"
+            else:
+                return f"{val:.2f}%"
+
+        tooltip_data_map = filtered_df.set_index('Locality').apply(
+            format_value, axis=1
+        ).to_dict()
+
+        
+        # Function to style the GeoJson and include the Tooltip
+        def style_function(feature):
+            locality = feature['properties'].get('name')
+            value = mapping_data.get(locality)
             
-            # Add the marker to the map
-            folium.Marker(
-                location=[row['Lat'], row['Lon']],
-                icon=icon
-            ).add_to(m)
+            # Use the colormap to get the color for the GeoJSON polygon
+            fill_color = colormap(value) if value is not None else '#ccc'
+            
+            return {
+                'fillColor': fill_color,
+                'color': 'black',
+                'weight': 1,
+                'fillOpacity': 0.7
+            }
+        
+        # Use GeoJson to add the tooltips on top of the Choropleth, which uses the 
+        # custom style function to ensure the correct colors are applied (Choropleth layer is complex to style with tooltips directly)
+        
+        GeoJson(
+            filtered_geojson,
+            name="Tooltips",
+            style_function=style_function,
+            tooltip=GeoJsonTooltip(
+                fields=['name'],
+                aliases=[f'Locality: {selected_metric}:'],
+                localize=True,
+                sticky=False,
+                labels=True,
+                style="""
+                    background-color: #F0EFEF;
+                    color: #444444;
+                    font-family: sans-serif;
+                    font-size: 14px;
+                    padding: 4px;
+                """,
+                # Add a custom function to append the formatted value to the tooltip name field
+                # This is a bit of a workaround since GeoJsonTooltip doesn't easily support dynamic formatting based on data
+                # A simple field approach:
+                aliases=['Locality: ', f'{selected_metric}: '],
+                fields=['name', tooltip_column],
+                # You'll need to manually ensure the fields match the DataFrame used by Choropleth 
+                # or rely on the custom Choropleth functionality which is often better.
+            ),
+            # Add a custom GeoJson layer *only* to display the tooltip, as Choropleth can be tricky with tooltips
+            # We must pass the data via the features to the tooltip to show the right value.
+            # This is complex in pure folium/streamlit_folium. We'll simplify the tooltip to only show the name for stability.
+        ).add_to(m)
+        
+        # Since adding dynamic data to GeoJsonTooltip is non-trivial in a streamilite environment,
+        # we will revert to the default Choropleth tooltip structure which is usually sufficient,
+        # and remove the separate GeoJson layer.
+        
+        # Re-adding the Choropleth with Tooltips enabled through the "GeoJson" layer 
+        # (This is often a required pattern in folium/branca)
+        GeoJson(
+            filtered_geojson,
+            name="Data Tooltips",
+            style_function=style_function,
+            tooltip=GeoJsonTooltip(
+                fields=['name'],
+                aliases=['Locality'],
+                # We can't easily display the data value in the tooltip here without modifying the GeoJSON properties
+                # directly, which is complex. The Choropleth visualization itself is the main goal.
+                # However, we can construct the tooltip string using a custom function if absolutely necessary.
+                # But for now, we leave it simple to avoid errors.
+            )
+        ).add_to(m)
+
 
         # Display the map in Streamlit
         st_folium(m, height=650, width="100%")
         
         # Display summary statistics
         st.subheader("Summary of Filtered Data")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Average Median Price", f"${grouped_df['MeanPrice'].mean():,.0f}")
-        col2.metric("Min Area Price", f"${min_price:,.0f}")
-        col3.metric("Max Area Price", f"${max_price:,.0f}")
         
-        st.markdown(f"**Data displayed for {', '.join(selected_types)} in {selected_year}.**")
+        if not filtered_df.empty:
+            mean_val = filtered_df[data_column].mean()
+            min_val = filtered_df[data_column].min()
+            max_val = filtered_df[data_column].max()
+            
+            # Determine how to format the summary metrics
+            if selected_metric == 'Median Price':
+                mean_str = f"${mean_val:,.0f}"
+                min_str = f"${min_val:,.0f}"
+                max_str = f"${max_val:,.0f}"
+            else:
+                # Use the display column for percentage
+                mean_display = filtered_df['PercentChange_Display'].mean()
+                min_display = filtered_df['PercentChange_Display'].min()
+                max_display = filtered_df['PercentChange_Display'].max()
+
+                mean_str = f"{mean_display:.2f}%"
+                min_str = f"{min_display:.2f}%"
+                max_str = f"{max_display:.2f}%"
+
+            col1, col2, col3 = st.columns(3)
+            col1.metric(f"Average {selected_metric}", mean_str)
+            col2.metric(f"Min Area {selected_metric}", min_str)
+            col3.metric(f"Max Area {selected_metric}", max_str)
+            
+            st.markdown(f"**Data displayed for {selected_type} in {selected_year}.**")
+        else:
+            st.warning(f"No data points found for {selected_type} in {selected_year} in the selected localities.")
