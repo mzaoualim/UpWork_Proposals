@@ -5,13 +5,13 @@ import json
 import io
 import branca.colormap as cm 
 from streamlit_folium import st_folium 
-from folium.features import GeoJsonTooltip, GeoJson 
+from folium.features import GeoJsonTooltip, GeoJson, DivIcon 
 import numpy as np
 
 # --- 1. CONFIGURATION AND DATA LOADING ---
 
 st.set_page_config(
-    page_title="Australian Property Median and PCT Price Map {Test}",
+    page_title="Australian Property Median Price Map",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -19,7 +19,7 @@ st.set_page_config(
 # Coordinates for centering the map on the general area covered by the GeoJSON
 # Based on the coordinates in boundaries.geojson (Sydney/NSW area)
 MAP_CENTER = (-33.95, 151.00) 
-MAP_ZOOM = 14
+MAP_ZOOM = 11
 
 @st.cache_data
 def load_data():
@@ -57,22 +57,18 @@ def load_data():
 
 boundaries, df = load_data()
 
-# --- 2. UTILITY FUNCTIONS FOR COLORMAPS ---
+# --- 2. UTILITY FUNCTIONS FOR COLORMAPS AND GEOMETRY ---
 
 # Define explicit color palettes to avoid 'AttributeError' with named palettes
 # Sequential Palette (Yellow-Green-Blue) for Median Price
 SEQ_COLORS = ['#ffffcc', '#a1dab4', '#41b6c4', '#2c7fb8', '#253494'] 
 # Diverging Palette (Red-White-Green) for Percent Change
-# Using a standard ColorBrewer diverging palette (RdYlGn)
 DIV_COLORS = ['#d73027', '#fc8d59', '#fee090', '#ffffbf', '#e0f3f8', '#abd9e9', '#74add1', '#4575b4'] 
 
 
 def create_color_map(metric, data_series):
     """
     Creates a Folium-compatible colormap based on the selected metric.
-    
-    Updated to use cm.LinearColormap with explicit color lists to resolve 
-    AttributeError with named palettes.
     """
     if data_series.empty or data_series.isnull().all():
         # Return a simple map if data is empty or all NaN
@@ -85,7 +81,6 @@ def create_color_map(metric, data_series):
              # Adjust scale slightly if all values are identical
              min_val, max_val = min_val * 0.9, max_val * 1.1 if min_val != 0 else -1, 1
 
-        # FIX: Using LinearColormap with explicit colors
         colormap = cm.LinearColormap(
             colors=SEQ_COLORS,
             vmin=min_val,
@@ -103,7 +98,6 @@ def create_color_map(metric, data_series):
         min_scale = -max_abs
         max_scale = max_abs
 
-        # FIX: Using LinearColormap with explicit colors
         colormap = cm.LinearColormap(
             colors=DIV_COLORS,
             vmin=min_scale,
@@ -112,9 +106,36 @@ def create_color_map(metric, data_series):
         )
         return colormap
 
+def get_polygon_center(geometry):
+    """
+    Calculates the approximate center (bounding box center) of a Folium GeoJSON polygon.
+    Returns the center in [lat, lon] format expected by Folium.
+    """
+    if geometry['type'] == 'Polygon':
+        coords = geometry['coordinates'][0] # Assuming simple polygon (no holes)
+    elif geometry['type'] == 'MultiPolygon':
+        # Simplify: just use the first polygon's coordinates
+        coords = geometry['coordinates'][0][0] 
+    else:
+        return MAP_CENTER # Return map center as fallback
+
+    # Calculate bounding box
+    all_lons = [p[0] for p in coords]
+    all_lats = [p[1] for p in coords]
+
+    min_lon, max_lon = min(all_lons), max(all_lons)
+    min_lat, max_lat = min(all_lats), max(all_lats)
+
+    center_lon = (min_lon + max_lon) / 2
+    center_lat = (min_lat + max_lat) / 2
+    
+    # Folium uses [latitude, longitude] order
+    return [center_lat, center_lon]
+
+
 # --- 3. STREAMLIT APP LAYOUT AND FILTERS ---
 
-st.title("🗺️ Australian Property Map")
+st.title("🗺️ Australian Property Median Price Map")
 
 # Sidebar for user filtering
 with st.sidebar:
@@ -196,7 +217,9 @@ if df is not None and boundaries is not None:
                 # Use int for formatting as it was converted earlier
                 return f"${int(val):,.0f}" 
             else:
-                return f"{val:.2f}%"
+                # Format positive changes with a '+' sign
+                sign = '+' if val > 0 and selected_metric == 'Percent Change' else ''
+                return f"{sign}{val:.2f}%"
 
         tooltip_data_map = filtered_df.set_index('Locality').apply(
             format_value, axis=1
@@ -215,12 +238,11 @@ if df is not None and boundaries is not None:
             'features': filtered_features
         }
         
-        # --- CRITICAL FIX: Merge data into GeoJSON properties for Tooltip ---
+        # --- CRITICAL: Merge data into GeoJSON properties for Coloring and Tooltip ---
         for feature in filtered_geojson['features']:
             locality = feature['properties'].get('name')
             
-            # Add the raw value (for coloring) and formatted value (for tooltip)
-            # Only add if the locality exists in the filtered data
+            # Add the raw value (for coloring) and formatted value (for tooltip/label)
             if locality in mapping_data:
                 feature['properties']['raw_value'] = mapping_data[locality]
                 feature['properties']['formatted_value'] = tooltip_data_map[locality]
@@ -230,7 +252,7 @@ if df is not None and boundaries is not None:
                 feature['properties']['formatted_value'] = 'N/A'
 
 
-        # --- 5. MAP GENERATION LOGIC (GeoJson with Tooltip) ---
+        # --- 5. MAP GENERATION LOGIC (GeoJson with Labels) ---
 
         m = folium.Map(
             location=MAP_CENTER, 
@@ -238,18 +260,13 @@ if df is not None and boundaries is not None:
             tiles="CartoDB positron" 
         )
 
-        # Create the color map
+        # Create the color map and add it to the map
         colormap = create_color_map(selected_metric, filtered_df[data_column])
-        
-        # Add Colormap to the map
         m.add_child(colormap)
 
         # Function to style the GeoJson (color based on raw_value property)
         def style_function(feature):
             value = feature['properties'].get('raw_value')
-            
-            # Use the colormap to get the color for the GeoJSON polygon
-            # Colormap returns the color hex code or default value if outside range
             fill_color = colormap(value) if value is not None else '#ccc'
             
             return {
@@ -259,13 +276,12 @@ if df is not None and boundaries is not None:
                 'fillOpacity': 0.7
             }
         
-        # Use a single GeoJson layer for rendering, styling, and tooltips
+        # Add the main GeoJson layer (coloring + hover tooltip)
         GeoJson(
             filtered_geojson,
             name="Property Data",
             style_function=style_function,
             tooltip=GeoJsonTooltip(
-                # Use the new properties we added to the GeoJSON object
                 fields=['name', 'formatted_value'], 
                 aliases=['Locality:', f'{selected_metric}:'],
                 localize=True,
@@ -283,6 +299,35 @@ if df is not None and boundaries is not None:
             ),
             highlight_function=lambda x: {'weight': 3, 'color': 'white', 'fillOpacity': 0.9}
         ).add_to(m)
+
+        
+        # --- NEW: Add static text labels (DivIcon Markers) ---
+        for feature in filtered_geojson['features']:
+            locality = feature['properties'].get('name')
+            formatted_value = feature['properties'].get('formatted_value')
+            center = get_polygon_center(feature['geometry'])
+
+            if formatted_value != 'N/A':
+                # Determine text color based on metric for better contrast
+                text_color = 'green' if (selected_metric == 'Percent Change' and feature['properties']['raw_value'] > 0) else 'red' if (selected_metric == 'Percent Change' and feature['properties']['raw_value'] < 0) else '#333'
+
+                # HTML content for the label
+                html_label = f"""
+                <div style="text-align: center; white-space: nowrap; font-weight: bold; font-size: 10px; color: {text_color}; text-shadow: 0 0 2px white, 0 0 2px white; mix-blend-mode: difference;">
+                    {locality}<br>
+                    {formatted_value}
+                </div>
+                """
+                
+                # Create the DivIcon marker at the center of the locality
+                folium.Marker(
+                    location=center,
+                    icon=DivIcon(
+                        icon_size=(150, 36), # Size of the HTML container
+                        icon_anchor=(75, 18), # Center the icon at the location
+                        html=html_label
+                    )
+                ).add_to(m)
 
 
         # Display the map in Streamlit
