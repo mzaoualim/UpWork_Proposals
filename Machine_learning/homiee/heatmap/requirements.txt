@@ -3,3 +3,6 @@ pandas
 numpy
 folium
 streamlit_folium
+json
+io
+branca
