@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import folium
+from streamlit_folium import st_folium 
 from folium.plugins import HeatMap
 from folium.features import DivIcon # Needed for custom labels on the map
 import colorsys
@@ -84,11 +85,6 @@ def get_color_from_price(price, min_price, max_price):
     normalized_price = (price - min_price) / (max_price - min_price)
     
     # We want higher prices to be DARKER blue.
-    # In HSL, Hue for blue is ~240. We vary Lightness (L) from 0.7 (light) to 0.3 (dark).
-    # Since normalized_price is 0 to 1 (min to max), we reverse it for L:
-    # L = 0.7 - (normalized_price * 0.4) 
-    
-    # Let's use a simpler approach: Interpolate between two hex colors: Light Blue to Dark Blue
     # Light: #ADD8E6 (RGB 173, 216, 230) -> Dark: #104E8B (RGB 16, 78, 139)
     r1, g1, b1 = (173, 216, 230)
     r2, g2, b2 = (16, 78, 139)
@@ -188,7 +184,7 @@ else:
             
             # Get color based on price
             fill_color = get_color_from_price(price, min_price, max_price)
-            text_color = '#FFFFFF' if fill_color in ['#104E8B'] else '#000000' # Dark text on light background
+            text_color = '#FFFFFF' if price > (min_price + max_price) / 2 else '#000000' # Simple rule for contrast
             
             # Format price for display
             formatted_price = f"${price:,.0f}"
