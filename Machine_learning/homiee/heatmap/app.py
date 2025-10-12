@@ -11,7 +11,7 @@ import numpy as np
 # --- 1. CONFIGURATION AND DATA LOADING ---
 
 st.set_page_config(
-    page_title="Australian Property Choropleth",
+    page_title="Australian Property Median and PCT Price Map {Test}",
     layout="wide",
     initial_sidebar_state="expanded"
 )
