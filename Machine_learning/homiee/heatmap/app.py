@@ -23,15 +23,19 @@ MAP_ZOOM = 11
 
 @st.cache_data
 def load_data():
-    """Loads the GeoJSON boundaries and CSV property data."""
+    """
+    Loads the GeoJSON boundaries and CSV property data using standard file I/O.
+    
+    This function was updated to use 'open()' instead of the non-standard 
+    'st.file_contents' to resolve the error.
+    """
     try:
-        # Load GeoJSON boundaries
-        geojson_data_raw = st.file_contents("boundaries.geojson")
-        boundaries = json.loads(geojson_data_raw)
+        # Load GeoJSON boundaries using standard Python file I/O
+        with open("boundaries.geojson", "r") as f:
+            boundaries = json.load(f)
         
-        # Load CSV data
-        csv_data_raw = st.file_contents("median_5loc_df.csv")
-        data = pd.read_csv(io.StringIO(csv_data_raw))
+        # Load CSV data directly using pandas read_csv from file path
+        data = pd.read_csv("median_5loc_df.csv")
         
         # Data Cleaning and Column Preparation
         data.columns = [col.strip() for col in data.columns]
@@ -51,7 +55,7 @@ def load_data():
 
     except Exception as e:
         st.error(f"Error loading or processing data files: {e}")
-        st.info("Please ensure 'boundaries.geojson' and 'median_5loc_df.csv' are uploaded.")
+        st.info("Please ensure 'boundaries.geojson' and 'median_5loc_df.csv' are uploaded and readable in the environment.")
         return None, None
 
 boundaries, df = load_data()
