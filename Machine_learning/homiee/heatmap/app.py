@@ -18,7 +18,7 @@ st.set_page_config(
 
 # Coordinates for centering the map on the general area covered by the GeoJSON
 MAP_CENTER = (-33.95, 151.00)
-MAP_ZOOM = 13 
+MAP_ZOOM = 14
 
 # Base path for GitHub compatibility
 BASE_PATH = 'Machine_learning/homiee/heatmap/' 
