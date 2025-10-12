@@ -114,7 +114,7 @@ def create_color_map(metric, data_series):
 
 # --- 3. STREAMLIT APP LAYOUT AND FILTERS ---
 
-st.title("🗺️ Australian Property Choropleth Map")
+st.title("🗺️ Australian Property Map")
 
 # Sidebar for user filtering
 with st.sidebar:
