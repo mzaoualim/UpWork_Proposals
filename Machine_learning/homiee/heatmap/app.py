@@ -310,7 +310,7 @@ if df is not None and boundaries is not None:
             if formatted_value != 'N/A':
                 # Determine text color based on metric for better contrast
                 # text_color = 'green' if (selected_metric == 'Percent Change' and feature['properties']['raw_value'] > 0) else 'red' if (selected_metric == 'Percent Change' and feature['properties']['raw_value'] < 0) else '#333'
-                text_color = 'black'
+                text_color = 'blue'
                 
                 # HTML content for the label
                 html_label = f"""
