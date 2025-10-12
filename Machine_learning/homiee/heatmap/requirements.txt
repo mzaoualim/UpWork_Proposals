@@ -3,4 +3,3 @@ pandas
 numpy
 folium
 streamlit_folium
-colorsys
