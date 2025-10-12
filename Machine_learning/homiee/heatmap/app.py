@@ -31,11 +31,11 @@ def load_data():
     """
     try:
         # Load GeoJSON boundaries using standard Python file I/O
-        with open("Machine_learning/homiee/heatmap/boundaries.geojson", "r") as f:
+        with open("boundaries.geojson", "r") as f:
             boundaries = json.load(f)
         
         # Load CSV data directly using pandas read_csv from file path
-        data = pd.read_csv("Machine_learning/homiee/heatmap/median_5loc_df.csv")
+        data = pd.read_csv("median_5loc_df.csv")
         
         # Data Cleaning and Column Preparation
         data.columns = [col.strip() for col in data.columns]
@@ -74,7 +74,8 @@ def create_color_map(metric, data_series):
         if min_val == max_val: # Handle edge case where all values are the same
              min_val, max_val = min_val * 0.9, max_val * 1.1
 
-        colormap = cm.linear.YlGnBu.scale(min_val, max_val)
+        # FIX: Changed YlGnBu to lowercase 'ylgnbu' to resolve the AttributeError
+        colormap = cm.linear.ylgnbu.scale(min_val, max_val)
         colormap.caption = 'Median Property Price (AUD)'
         return colormap
     
@@ -83,9 +84,9 @@ def create_color_map(metric, data_series):
         # Find the max absolute deviation from zero for a balanced diverging scale
         max_abs = max(abs(data_series.min()), abs(data_series.max()))
         
-        # Use RdYlGn for price changes (Red = negative, Yellow = neutral, Green = positive)
+        # FIX: Changed RdYlGn to lowercase 'rdylgn' to resolve the AttributeError
         # Note: We scale from -max_abs to +max_abs to ensure zero is the center (yellow)
-        colormap = cm.linear.RdYlGn.scale(-max_abs, max_abs)
+        colormap = cm.linear.rdylgn.scale(-max_abs, max_abs)
         colormap.caption = 'Year-over-Year Percent Change (%)'
         return colormap
 
