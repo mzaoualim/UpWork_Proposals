@@ -150,23 +150,60 @@ if df is not None and boundaries is not None:
             (df['PropertyType'] == selected_type)
         ].copy()
 
-        # Prepare the final mapping data (Locality name -> Value)
-        
         # Select the correct data column based on the selected metric
         if selected_metric == 'Median Price':
             data_column = 'MedianPrice'
             tooltip_column = 'MedianPrice'
-            tooltip_format = '${:,.0f}'
         else: # Percent Change
             data_column = 'PercentChange' # Use raw float for Colormap scaling
             tooltip_column = 'PercentChange_Display' # Use the % display column for tooltips
-            tooltip_format = '{:.2f}%'
 
 
-        # Create the mapping dictionary: {Locality Name: Value}
+        # Create the mapping dictionary for coloring: {Locality Name: Raw Value}
         mapping_data = filtered_df.set_index('Locality')[data_column].to_dict()
 
-        # --- 5. MAP GENERATION LOGIC (Choropleth) ---
+        # Create a formatted data map for the Tooltip: {Locality Name: Formatted Value String}
+        def format_value(row):
+            val = row[tooltip_column]
+            if selected_metric == 'Median Price':
+                # Use int for formatting as it was converted earlier
+                return f"${int(val):,.0f}" 
+            else:
+                return f"{val:.2f}%"
+
+        tooltip_data_map = filtered_df.set_index('Locality').apply(
+            format_value, axis=1
+        ).to_dict()
+
+
+        # Filter GeoJSON features to only include selected localities
+        filtered_features = [
+            feature for feature in boundaries['features']
+            if feature['properties'].get('name') in selected_localities
+        ]
+        
+        # Create a mutable GeoJSON object
+        filtered_geojson = {
+            'type': 'FeatureCollection',
+            'features': filtered_features
+        }
+        
+        # --- CRITICAL FIX: Merge data into GeoJSON properties for Tooltip ---
+        for feature in filtered_geojson['features']:
+            locality = feature['properties'].get('name')
+            
+            # Add the raw value (for coloring) and formatted value (for tooltip)
+            # Only add if the locality exists in the filtered data
+            if locality in mapping_data:
+                feature['properties']['raw_value'] = mapping_data[locality]
+                feature['properties']['formatted_value'] = tooltip_data_map[locality]
+            else:
+                # Set defaults for non-matched or missing data points
+                feature['properties']['raw_value'] = None
+                feature['properties']['formatted_value'] = 'N/A'
+
+
+        # --- 5. MAP GENERATION LOGIC (GeoJson with Tooltip) ---
 
         m = folium.Map(
             location=MAP_CENTER, 
@@ -180,55 +217,9 @@ if df is not None and boundaries is not None:
         # Add Colormap to the map
         m.add_child(colormap)
 
-        # Filter GeoJSON features to only include selected localities
-        filtered_features = [
-            feature for feature in boundaries['features']
-            if feature['properties'].get('name') in selected_localities
-        ]
-        
-        # Create a filtered GeoJSON object
-        filtered_geojson = {
-            'type': 'FeatureCollection',
-            'features': filtered_features
-        }
-
-        # --- Choropleth Layer ---
-        folium.Choropleth(
-            geo_data=filtered_geojson,
-            data=filtered_df, # Dataframe for lookup
-            columns=['Locality', data_column], # Key column and value column
-            key_on='properties.name', # Key in the GeoJSON (must match Locality name)
-            fill_color=colormap.get_name(), # Use the colormap name (e.g., 'YlGnBu')
-            line_opacity=0.5,
-            highlight=True,
-            legend_name=colormap.caption,
-            name=selected_metric,
-        ).add_to(m)
-
-        # --- Tooltip Layer (Shows specific data on hover) ---
-        
-        # Merge the data back into the GeoJSON features for the Tooltip
-        # We need the formatted data (Median Price as string, Percent Change as %)
-        
-        # Create a formatted data map for the Tooltip (Locality: Formatted Value)
-        # Note: We must handle the two different columns here (raw vs display)
-        
-        def format_value(row):
-            val = row[tooltip_column]
-            if selected_metric == 'Median Price':
-                return f"${val:,.0f}"
-            else:
-                return f"{val:.2f}%"
-
-        tooltip_data_map = filtered_df.set_index('Locality').apply(
-            format_value, axis=1
-        ).to_dict()
-
-        
-        # Function to style the GeoJson and include the Tooltip
+        # Function to style the GeoJson (color based on raw_value property)
         def style_function(feature):
-            locality = feature['properties'].get('name')
-            value = mapping_data.get(locality)
+            value = feature['properties'].get('raw_value')
             
             # Use the colormap to get the color for the GeoJSON polygon
             fill_color = colormap(value) if value is not None else '#ccc'
@@ -240,57 +231,29 @@ if df is not None and boundaries is not None:
                 'fillOpacity': 0.7
             }
         
-        # Use GeoJson to add the tooltips on top of the Choropleth, which uses the 
-        # custom style function to ensure the correct colors are applied (Choropleth layer is complex to style with tooltips directly)
-        
+        # Use a single GeoJson layer for rendering, styling, and tooltips
         GeoJson(
             filtered_geojson,
-            name="Tooltips",
+            name="Property Data",
             style_function=style_function,
             tooltip=GeoJsonTooltip(
-                fields=['name'],
-                aliases=[f'Locality: {selected_metric}:'],
+                # Use the new properties we added to the GeoJSON object
+                fields=['name', 'formatted_value'], 
+                aliases=['Locality:', f'{selected_metric}:'],
                 localize=True,
-                sticky=False,
+                sticky=True,
                 labels=True,
                 style="""
-                    background-color: #F0EFEF;
+                    background-color: #F0F0F0;
                     color: #444444;
                     font-family: sans-serif;
                     font-size: 14px;
-                    padding: 4px;
+                    padding: 6px;
+                    border: 1px solid #aaa;
+                    box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
                 """,
-                # Add a custom function to append the formatted value to the tooltip name field
-                # This is a bit of a workaround since GeoJsonTooltip doesn't easily support dynamic formatting based on data
-                # A simple field approach:
-                aliases=['Locality: ', f'{selected_metric}: '],
-                fields=['name', tooltip_column],
-                # You'll need to manually ensure the fields match the DataFrame used by Choropleth 
-                # or rely on the custom Choropleth functionality which is often better.
             ),
-            # Add a custom GeoJson layer *only* to display the tooltip, as Choropleth can be tricky with tooltips
-            # We must pass the data via the features to the tooltip to show the right value.
-            # This is complex in pure folium/streamlit_folium. We'll simplify the tooltip to only show the name for stability.
-        ).add_to(m)
-        
-        # Since adding dynamic data to GeoJsonTooltip is non-trivial in a streamilite environment,
-        # we will revert to the default Choropleth tooltip structure which is usually sufficient,
-        # and remove the separate GeoJson layer.
-        
-        # Re-adding the Choropleth with Tooltips enabled through the "GeoJson" layer 
-        # (This is often a required pattern in folium/branca)
-        GeoJson(
-            filtered_geojson,
-            name="Data Tooltips",
-            style_function=style_function,
-            tooltip=GeoJsonTooltip(
-                fields=['name'],
-                aliases=['Locality'],
-                # We can't easily display the data value in the tooltip here without modifying the GeoJSON properties
-                # directly, which is complex. The Choropleth visualization itself is the main goal.
-                # However, we can construct the tooltip string using a custom function if absolutely necessary.
-                # But for now, we leave it simple to avoid errors.
-            )
+            highlight_function=lambda x: {'weight': 3, 'color': 'white', 'fillOpacity': 0.9}
         ).add_to(m)
 
 
