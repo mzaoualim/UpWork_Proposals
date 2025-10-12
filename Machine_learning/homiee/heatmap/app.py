@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 # Coordinates for centering the map on the general area covered by the GeoJSON
-MAP_CENTER = (-33.84, 151.01)
+MAP_CENTER = (-33.93, 151.01)
 MAP_ZOOM = 14
 
 # Base path for GitHub compatibility
