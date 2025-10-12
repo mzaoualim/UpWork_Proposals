@@ -176,8 +176,8 @@ with st.sidebar:
         # CRITICAL: Default to ALL localities as requested
         selected_localities = st.multiselect(
             "Select Localities",
-            options=all_localities,
-            default=all_localities,
+            options=['PANANIA', 'REVESBY', 'PADSTOW'],
+            default=['PANANIA', 'REVESBY', 'PADSTOW'],
             placeholder="Choose localities to display"
         )
         
