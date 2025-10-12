@@ -25,9 +25,6 @@ MAP_ZOOM = 11
 def load_data():
     """
     Loads the GeoJSON boundaries and CSV property data using standard file I/O.
-    
-    This function was updated to use 'open()' instead of the non-standard 
-    'st.file_contents' to resolve the error.
     """
     try:
         # Load GeoJSON boundaries using standard Python file I/O
@@ -62,21 +59,39 @@ boundaries, df = load_data()
 
 # --- 2. UTILITY FUNCTIONS FOR COLORMAPS ---
 
+# Define explicit color palettes to avoid 'AttributeError' with named palettes
+# Sequential Palette (Yellow-Green-Blue) for Median Price
+SEQ_COLORS = ['#ffffcc', '#a1dab4', '#41b6c4', '#2c7fb8', '#253494'] 
+# Diverging Palette (Red-White-Green) for Percent Change
+# Using a standard ColorBrewer diverging palette (RdYlGn)
+DIV_COLORS = ['#d73027', '#fc8d59', '#fee090', '#ffffbf', '#e0f3f8', '#abd9e9', '#74add1', '#4575b4'] 
+
+
 def create_color_map(metric, data_series):
-    """Creates a Folium-compatible colormap based on the selected metric."""
-    if data_series.empty:
-        # Return a simple map if data is empty to prevent errors
-        return cm.linear.PuBu.scale(0, 1)
+    """
+    Creates a Folium-compatible colormap based on the selected metric.
+    
+    Updated to use cm.LinearColormap with explicit color lists to resolve 
+    AttributeError with named palettes.
+    """
+    if data_series.empty or data_series.isnull().all():
+        # Return a simple map if data is empty or all NaN
+        return cm.LinearColormap(colors=['#ccc', '#ccc'], vmin=0, vmax=1, caption='No Data')
 
     # 1. Median Price (Sequential - Blue)
     if metric == 'Median Price':
         min_val, max_val = data_series.min(), data_series.max()
-        if min_val == max_val: # Handle edge case where all values are the same
-             min_val, max_val = min_val * 0.9, max_val * 1.1
+        if min_val == max_val: 
+             # Adjust scale slightly if all values are identical
+             min_val, max_val = min_val * 0.9, max_val * 1.1 if min_val != 0 else -1, 1
 
-        # FIX: Changed YlGnBu to lowercase 'ylgnbu' to resolve the AttributeError
-        colormap = cm.linear.ylgnbu.scale(min_val, max_val)
-        colormap.caption = 'Median Property Price (AUD)'
+        # FIX: Using LinearColormap with explicit colors
+        colormap = cm.LinearColormap(
+            colors=SEQ_COLORS,
+            vmin=min_val,
+            vmax=max_val,
+            caption='Median Property Price (AUD)'
+        )
         return colormap
     
     # 2. Percent Change (Diverging - Red/Yellow/Green)
@@ -84,10 +99,17 @@ def create_color_map(metric, data_series):
         # Find the max absolute deviation from zero for a balanced diverging scale
         max_abs = max(abs(data_series.min()), abs(data_series.max()))
         
-        # FIX: Changed RdYlGn to lowercase 'rdylgn' to resolve the AttributeError
-        # Note: We scale from -max_abs to +max_abs to ensure zero is the center (yellow)
-        colormap = cm.linear.rdylgn.scale(-max_abs, max_abs)
-        colormap.caption = 'Year-over-Year Percent Change (%)'
+        # Ensure vmin and vmax are symmetrical around zero
+        min_scale = -max_abs
+        max_scale = max_abs
+
+        # FIX: Using LinearColormap with explicit colors
+        colormap = cm.LinearColormap(
+            colors=DIV_COLORS,
+            vmin=min_scale,
+            vmax=max_scale,
+            caption='Year-over-Year Percent Change (%)'
+        )
         return colormap
 
 # --- 3. STREAMLIT APP LAYOUT AND FILTERS ---
@@ -227,6 +249,7 @@ if df is not None and boundaries is not None:
             value = feature['properties'].get('raw_value')
             
             # Use the colormap to get the color for the GeoJSON polygon
+            # Colormap returns the color hex code or default value if outside range
             fill_color = colormap(value) if value is not None else '#ccc'
             
             return {
