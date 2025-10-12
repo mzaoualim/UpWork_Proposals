@@ -17,8 +17,8 @@ st.set_page_config(
 )
 
 # Coordinates for centering the map on the general area covered by the GeoJSON
-MAP_CENTER = (-33.955, 151.01)
-MAP_ZOOM = 14
+MAP_CENTER = (-33.95, 151.00)
+MAP_ZOOM = 13 
 
 # Base path for GitHub compatibility
 BASE_PATH = 'Machine_learning/homiee/heatmap/' 
@@ -31,7 +31,7 @@ GEOJSON_FILENAMES = [
     "Panania_boundaries.geojson",
     "Revesby_boundaries.geojson"
 ]
-# LOCALITIES are now explicitly uppercase
+# LOCALITIES are explicitly uppercase
 LOCALITIES = ["EAST HILLS", "PADSTOW", "PADSTOW HEIGHTS", "PANANIA", "REVESBY"]
 
 
@@ -50,9 +50,6 @@ def load_data():
             # Construct the full path
             geojson_path = os.path.join(BASE_PATH, filename)
             
-            # NOTE: We assume the 'name' property in the GeoJSON features is also uppercase 
-            # or is handled by the filtering logic later. If not, this is where GeoJSON 
-            # feature properties would need to be converted to uppercase.
             with open(geojson_path, "r") as f:
                 geojson_data = json.load(f)
                 
@@ -294,87 +291,121 @@ if df is not None and boundaries is not None:
                 feature['properties']['formatted_value'] = 'N/A'
 
 
-        # --- 5. MAP GENERATION LOGIC ---
+        # --- 5. MAP AND TABLE GENERATION LOGIC ---
+        
+        # Create columns: 60% for the map, 40% for the table/summary
+        col_map, col_table = st.columns([0.6, 0.4])
 
-        m = folium.Map(
-            location=MAP_CENTER, 
-            zoom_start=MAP_ZOOM,
-            tiles="CartoDB positron" 
-        )
-
-        # Create the color map and add it to the map
-        colormap = create_color_map(selected_metric, filtered_df[data_column])
-        m.add_child(colormap)
-
-        # Function to style the GeoJson
-        def style_function(feature):
-            value = feature['properties'].get('raw_value')
-            fill_color = colormap(value) if value is not None else '#ccc'
+        with col_map:
+            st.subheader(f"Median Property Price Map: {selected_type}, {selected_year}")
             
-            return {
-                'fillColor': fill_color,
-                'color': 'black',
-                'weight': 1,
-                'fillOpacity': 0.7
-            }
-        
-        # Add the main GeoJson layer (coloring + hover tooltip)
-        GeoJson(
-            filtered_geojson,
-            name="Property Data",
-            style_function=style_function,
-            tooltip=GeoJsonTooltip(
-                fields=['name', 'formatted_value'], 
-                aliases=['Locality:', f'{selected_metric}:'],
-                localize=True,
-                sticky=True,
-                labels=True,
-                style="""
-                    background-color: #F0F0F0;
-                    color: #444444;
-                    font-family: sans-serif;
-                    font-size: 14px;
-                    padding: 6px;
-                    border: 1px solid #aaa;
-                    box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
-                """,
-            ),
-            highlight_function=lambda x: {'weight': 3, 'color': 'white', 'fillOpacity': 0.9}
-        ).add_to(m)
+            m = folium.Map(
+                location=MAP_CENTER, 
+                zoom_start=MAP_ZOOM,
+                tiles="CartoDB positron" 
+            )
 
-        
-        # Add static text labels (DivIcon Markers)
-        for feature in filtered_geojson['features']:
-            locality = feature['properties'].get('name')
-            formatted_value = feature['properties'].get('formatted_value')
-            center = get_polygon_center(feature['geometry'])
+            # Create the color map and add it to the map
+            colormap = create_color_map(selected_metric, filtered_df[data_column])
+            m.add_child(colormap)
 
-            if formatted_value != 'N/A':
-                text_color = 'blue'
+            # Function to style the GeoJson
+            def style_function(feature):
+                value = feature['properties'].get('raw_value')
+                fill_color = colormap(value) if value is not None else '#ccc'
                 
-                html_label = f"""
-                <div style="text-align: center; white-space: nowrap; font-weight: bold; font-size: 10px; color: {text_color}; text-shadow: 0 0 2px white, 0 0 2px white; mix-blend-mode: difference;">
-                    {locality}<br>
-                    {formatted_value}
-                </div>
-                """
+                return {
+                    'fillColor': fill_color,
+                    'color': 'black',
+                    'weight': 1,
+                    'fillOpacity': 0.7
+                }
+            
+            # Add the main GeoJson layer (coloring + hover tooltip)
+            GeoJson(
+                filtered_geojson,
+                name="Property Data",
+                style_function=style_function,
+                tooltip=GeoJsonTooltip(
+                    fields=['name', 'formatted_value'], 
+                    aliases=['Locality:', f'{selected_metric}:'],
+                    localize=True,
+                    sticky=True,
+                    labels=True,
+                    style="""
+                        background-color: #F0F0F0;
+                        color: #444444;
+                        font-family: sans-serif;
+                        font-size: 14px;
+                        padding: 6px;
+                        border: 1px solid #aaa;
+                        box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
+                    """, 
+                ),
+                highlight_function=lambda x: {'weight': 3, 'color': 'white', 'fillOpacity': 0.9}
+            ).add_to(m)
+
+            
+            # Add static text labels (DivIcon Markers)
+            for feature in filtered_geojson['features']:
+                locality = feature['properties'].get('name')
+                formatted_value = feature['properties'].get('formatted_value')
+                center = get_polygon_center(feature['geometry'])
+
+                if formatted_value != 'N/A':
+                    text_color = 'blue'
+                    
+                    html_label = f"""
+                    <div style="text-align: center; white-space: nowrap; font-weight: bold; font-size: 10px; color: {text_color}; text-shadow: 0 0 2px white, 0 0 2px white; mix-blend-mode: difference;">
+                        {locality}<br>
+                        {formatted_value}
+                    </div>
+                    """
+                    
+                    folium.Marker(
+                        location=center,
+                        icon=DivIcon(
+                            icon_size=(150, 36),
+                            icon_anchor=(75, 18),
+                            html=html_label
+                        )
+                    ).add_to(m)
+
+
+            # Display the map in Streamlit
+            st_folium(m, height=600, width="100%")
+
+
+        with col_table:
+            st.subheader("Filtered Data Summary")
+            
+            if not filtered_df.empty:
+                # Prepare a clean DataFrame for display
+                display_df = filtered_df.rename(columns={
+                    'MedianPrice': 'Median Price (AUD)',
+                    'PercentChange_Display': 'YoY % Change',
+                    'Transaction frequency': 'Transactions',
+                    'PropertyType': 'Type'
+                }).set_index('Locality')[['Median Price (AUD)', 'YoY % Change', 'Transactions']]
+
+                # Format columns for better display
+                st.dataframe(
+                    display_df.style.format({
+                        'Median Price (AUD)': "${:,.0f}",
+                        'YoY % Change': "{:+.2f}%",
+                        'Transactions': "{:,.0f}"
+                    }),
+                    use_container_width=True,
+                    height=600 # Match map height
+                )
                 
-                folium.Marker(
-                    location=center,
-                    icon=DivIcon(
-                        icon_size=(150, 36),
-                        icon_anchor=(75, 18),
-                        html=html_label
-                    )
-                ).add_to(m)
+            else:
+                st.warning(f"No data points found for {selected_type} in {selected_year} in the selected localities.")
 
+        # Display summary statistics below the columns, spanning the full width
+        st.markdown("---")
+        st.subheader("Summary Statistics")
 
-        # Display the map in Streamlit
-        st_folium(m, height=650, width="100%")
-        
-        # Display summary statistics
-        st.subheader("Summary of Filtered Data")
-        
         if not filtered_df.empty:
             mean_val = filtered_df[data_column].mean()
             min_val = filtered_df[data_column].min()
@@ -399,5 +430,3 @@ if df is not None and boundaries is not None:
             col3.metric(f"Max Area {selected_metric}", max_str)
             
             st.markdown(f"**Data displayed for {selected_type} in {selected_year}.**")
-        else:
-            st.warning(f"No data points found for {selected_type} in {selected_year} in the selected localities.")
