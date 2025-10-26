@@ -2,3 +2,5 @@ streamlit
 pymongo
 requests
 python-dotenv
+transformers
+torch
