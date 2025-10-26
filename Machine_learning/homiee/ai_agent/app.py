@@ -7,8 +7,8 @@ from query_engine import llm_to_mongo
 
 # Load secrets
 load_dotenv()
-MONGO_URI = os.getenv("MONGO_URI")
-MONGO_DB = os.getenv("MONGO_DB")
+MONGO_URI = st.secrets["MONGO_URI"]
+MONGO_DB = st.secrets["MONGO_DB"]
 
 @st.cache_resource
 def get_mongo_client():
