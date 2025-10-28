@@ -1,5 +1,7 @@
 streamlit
-opencv-python-headless
+opencv-python
+libgl1
+libglib2.0-0
 ultralytics
 norfair
 numpy
