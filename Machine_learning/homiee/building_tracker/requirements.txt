@@ -1,7 +1,5 @@
 streamlit
 opencv-python
-libgl1
-libglib2.0-0
 ultralytics
 norfair
 numpy
