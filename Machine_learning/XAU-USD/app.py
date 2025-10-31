@@ -29,7 +29,7 @@ news_enable = st.sidebar.checkbox('Enable news lock demo', value=True)
 
 @st.cache_data
 def load_sample():
-    df = pd.read_csv('data/sample_xauusd_2025.csv', parse_dates=['datetime']).set_index('datetime')
+    df = pd.read_csv('Machine_learning/XAU-USD/data/sample_xauusd_2025.csv', parse_dates=['datetime']).set_index('datetime')
     return df
 
 @st.cache_data
