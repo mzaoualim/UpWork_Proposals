@@ -17,7 +17,7 @@ start_equity = st.sidebar.number_input('Start equity', value=10000.0)
 # Load CSV
 @st.cache_data
 def load_csv():
-    df = pd.read_csv('Machine_learning/XAUD-USD/data/XAU_15m_data.csv', parse_dates=['datetime'])
+    df = pd.read_csv('Machine_learning/XAU-USD/data/XAU_15m_data.csv', parse_dates=['datetime'])
     df.set_index('datetime', inplace=True)
     # Fill missing values if any
     df[['open','high','low','close','volume']] = df[['open','high','low','close','volume']].fillna(method='ffill')
