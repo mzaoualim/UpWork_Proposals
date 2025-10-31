@@ -24,7 +24,9 @@ def fetch_data():
     end = datetime.now(timezone.utc)
     start = end - timedelta(days=3)
     # data = yf.download('XAUUSD=X', start=start, end=end, interval='1m', progress=False)
-    data = yf.download('GC=F', start=start, end=end, interval='1m', progress=False)
+    # data = yf.download('GC=F', start=start, end=end, interval='1m', progress=False)
+    data = yf.download('XAUUSD=X', start=start, end=end, interval='1d', progress=False)
+
     if data.empty:
         st.warning('No live data fetched, please try later')
         return None
