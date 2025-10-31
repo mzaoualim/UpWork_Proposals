@@ -18,7 +18,7 @@ start_equity = st.sidebar.number_input('Start equity', value=10000.0)
 @st.cache_data
 def load_csv():
     # df = pd.read_csv('Machine_learning/XAU-USD/data/XAU_15m_data.csv', parse_dates=['Date'])
-    df = pd.read_csv('data/XAU_15m_data.csv', skipinitialspace=True, parse_dates=['Date'])
+    df = pd.read_csv('XAU-USD/data/XAU_15m_data.csv', skipinitialspace=True, parse_dates=['Date'])
     df.rename(columns={
         'Date': 'datetime',
         'Open': 'open',
