@@ -51,4 +51,7 @@ if st.button('Run Backtest'):
     st.subheader('Trades')
     st.dataframe(trades_df if not trades_df.empty else 'No trades generated')
     st.subheader('Risk Summary')
-    st.write({'start_equity': risk.start_equity, 'end_equity': risk.equity, 'daily_pnl': risk.daily_pnl})
+    st.write({
+        'start_equity': risk.start_equity,
+        'end_equity': risk.equity
+    })
