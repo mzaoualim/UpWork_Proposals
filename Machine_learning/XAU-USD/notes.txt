@@ -1,6 +1,0 @@
-For production:
-- use persistent store (Redis/Postgres) for idempotency
-- add ZeroMQ + MT5 EA bridge
-- integrate walk-forward & Monte Carlo modules
-- CI/CD via GitHub Actions
-- secrets with sops+age
