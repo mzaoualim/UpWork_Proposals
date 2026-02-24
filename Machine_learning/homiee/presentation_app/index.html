@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Property Price Comparator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0d0f14;
+    --surface:  #13161e;
+    --card:     #181c27;
+    --border:   #232736;
+    --accent:   #00e5ff;
+    --accent2:  #ff6b35;
+    --green:    #00e5a0;
+    --red:      #ff4d6d;
+    --muted:    #4a5068;
+    --text:     #c8cde0;
+    --bright:   #eef0f8;
+    --mono:     'Space Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .header-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.2);
+    color: var(--accent);
+  }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .api-key-wrap {
+    position: relative;
+  }
+
+  .api-key-wrap input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 10px;
+    width: 280px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .api-key-wrap input:focus { border-color: var(--accent); }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { background: #33ebff; }
+  .btn-primary:disabled { background: var(--muted); cursor: not-allowed; color: var(--border); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid rgba(0,229,255,0.3);
+  }
+  .btn-ghost:hover { background: rgba(0,229,255,0.07); }
+
+  .btn-upload {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-upload:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Main layout ── */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Left panel ── */
+  .left-panel {
+    width: 420px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .panel-toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 7px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+
+  .row-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    padding: 4px 12px 8px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── Table ── */
+  .table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .table-wrap::-webkit-scrollbar { width: 4px; }
+  .table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  th {
+    background: var(--bg);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 7px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(35,39,54,0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+  }
+
+  tr { cursor: pointer; transition: background 0.1s; }
+  tr:hover td { background: rgba(0,229,255,0.04); }
+  tr.selected td { background: rgba(0,229,255,0.08); }
+  tr.selected td:first-child { border-left: 2px solid var(--accent); }
+
+  .ptype-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .ptype-house { background: rgba(0,229,160,0.12); color: var(--green); border: 1px solid rgba(0,229,160,0.2); }
+  .ptype-unit  { background: rgba(0,229,255,0.10); color: var(--accent); border: 1px solid rgba(0,229,255,0.2); }
+  .ptype-land  { background: rgba(255,107,53,0.10); color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .page-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .page-btn:disabled { opacity: 0.3; cursor: default; }
+  .page-info { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  /* ── Right panel ── */
+  .right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .detail-header {
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+
+  .address-line {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--bright);
+    letter-spacing: 0.02em;
+  }
+
+  .url-line {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .url-line a { color: var(--accent); text-decoration: none; }
+  .url-line a:hover { text-decoration: underline; }
+
+  /* ── Prediction stats ── */
+  .stats-row {
+    display: flex;
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .stat-block {
+    flex: 1;
+    background: var(--surface);
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--bright);
+  }
+
+  .stat-value.lo  { color: #7c83a0; }
+  .stat-value.mid { color: var(--accent); }
+  .stat-value.hi  { color: #7c83a0; }
+  .stat-value.seg { font-size: 13px; color: var(--text); }
+
+  /* ── Chart area ── */
+  .chart-area {
+    flex: 1;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+
+  .chart-area::-webkit-scrollbar { width: 4px; }
+  .chart-area::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .chart-placeholder {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .chart-placeholder-icon {
+    font-size: 40px;
+    opacity: 0.15;
+  }
+
+  .chart-placeholder-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  canvas#chart {
+    width: 100%;
+    border-radius: 6px;
+    background: var(--card);
+  }
+
+  /* ── OTH result bar ── */
+  .oth-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 20px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .oth-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .oth-value {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--bright);
+  }
+
+  .oth-diff {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .oth-diff.positive { color: var(--red); }
+  .oth-diff.negative { color: var(--green); }
+  .oth-diff.neutral  { color: var(--text); }
+
+  .oth-source-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-estimate { background: rgba(0,229,255,0.08); color: var(--accent); border: 1px solid rgba(0,229,255,0.2); }
+  .badge-for_sale { background: rgba(0,229,160,0.08); color: var(--green); border: 1px solid rgba(0,229,160,0.2); }
+  .badge-sold     { background: rgba(255,107,53,0.08); color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+  .badge-vision   { background: rgba(180,100,255,0.08); color: #b46cff; border: 1px solid rgba(180,100,255,0.2); }
+  .badge-none     { background: rgba(255,77,109,0.08); color: var(--red); border: 1px solid rgba(255,77,109,0.2); }
+
+  .oth-spacer { flex: 1; }
+
+  /* ── Loading spinner ── */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(0,229,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    z-index: 999;
+    transform: translateY(60px);
+    opacity: 0;
+    transition: all 0.3s;
+    max-width: 360px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── Status bar ── */
+  .statusbar {
+    padding: 4px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    flex-shrink: 0;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .no-select-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    opacity: 0.4;
+  }
+  .no-select-state svg { width: 48px; height: 48px; stroke: var(--muted); }
+  .no-select-state p { font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <h1>🏠 PropComparator</h1>
+  <span class="header-badge" id="csv-badge">No CSV</span>
+
+  <div class="header-right">
+    <div class="api-key-wrap">
+      <input type="password" id="api-key" placeholder="Anthropic API key (vision fallback)">
+    </div>
+    <label>
+      <input type="file" id="csv-upload" accept=".csv" style="display:none">
+      <span class="btn btn-upload" onclick="document.getElementById('csv-upload').click()">📂 Load CSV</span>
+    </label>
+  </div>
+</header>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Left: property table -->
+  <div class="left-panel">
+    <div class="panel-toolbar">
+      <input class="search-input" id="search" placeholder="Filter suburb, postcode, street…">
+      <button class="btn btn-ghost" id="random-btn" onclick="pickRandom()" disabled>🎲</button>
+    </div>
+    <div class="row-count" id="row-count">—</div>
+    <div class="table-wrap" id="table-wrap">
+      <div class="empty-state">Load a CSV to begin</div>
+    </div>
+    <div class="pagination" id="pagination" style="display:none">
+      <button class="page-btn" id="prev-btn" onclick="changePage(-1)" disabled>◀</button>
+      <span class="page-info" id="page-info">1 / 1</span>
+      <button class="page-btn" id="next-btn" onclick="changePage(1)" disabled>▶</button>
+    </div>
+  </div>
+
+  <!-- Right: detail -->
+  <div class="right-panel">
+
+    <div id="no-selection" class="no-select-state" style="flex:1;display:flex;">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <p>Select a property</p>
+    </div>
+
+    <div id="detail-view" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+      <div class="detail-header">
+        <div class="address-line" id="address-line">—</div>
+        <div class="url-line"><a id="oth-link" href="#" target="_blank">—</a></div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-block">
+          <div class="stat-label">Low (P10)</div>
+          <div class="stat-value lo" id="stat-p10">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">Mid (P50)</div>
+          <div class="stat-value mid" id="stat-p50">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">High (P90)</div>
+          <div class="stat-value hi" id="stat-p90">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">Type</div>
+          <div class="stat-value seg" id="stat-ptype">—</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-label">Segment</div>
+          <div class="stat-value seg" id="stat-seg">—</div>
+        </div>
+      </div>
+
+      <div class="chart-area" id="chart-area">
+        <div class="chart-placeholder" id="chart-placeholder">
+          <div class="chart-placeholder-icon">📊</div>
+          <div class="chart-placeholder-text">Fetch OnTheHouse to compare</div>
+        </div>
+        <canvas id="chart" height="160" style="display:none"></canvas>
+      </div>
+
+      <div class="oth-bar">
+        <div>
+          <div class="oth-label" id="oth-source-label">OTH Estimate</div>
+          <div class="oth-value" id="oth-value">—</div>
+        </div>
+        <div>
+          <div class="oth-label">vs Model Mid</div>
+          <div class="oth-diff" id="oth-diff">—</div>
+        </div>
+        <span class="oth-source-badge" id="oth-badge" style="display:none"></span>
+        <div class="oth-spacer"></div>
+        <button class="btn btn-primary" id="fetch-btn" onclick="fetchOTH()" disabled>🔍 Fetch OnTheHouse</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="statusbar" id="statusbar">Ready</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let state = {
+  currentIdx: null,
+  currentRow: null,
+  page: 1,
+  pageSize: 50,
+  total: 0,
+  search: '',
+  scraping: false,
+};
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  const res = await apiFetch('/api/status');
+  if (res.loaded) {
+    updateBadge(res.rows);
+    await loadPage();
+  }
+
+  document.getElementById('search').addEventListener('input', debounce(e => {
+    state.search = e.target.value;
+    state.page = 1;
+    loadPage();
+  }, 300));
+
+  document.getElementById('csv-upload').addEventListener('change', uploadCSV);
+}
+
+// ── API helpers ───────────────────────────────────────────────────────────────
+async function apiFetch(url, opts = {}) {
+  try {
+    const r = await fetch(url, opts);
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: r.statusText }));
+      throw new Error(err.detail || r.statusText);
+    }
+    return r.json();
+  } catch (e) {
+    showToast('❌ ' + e.message);
+    throw e;
+  }
+}
+
+// ── CSV upload ────────────────────────────────────────────────────────────────
+async function uploadCSV(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  setStatus('Uploading CSV…');
+  const res = await apiFetch('/api/upload-csv', { method: 'POST', body: fd });
+  updateBadge(res.rows);
+  state.page = 1;
+  state.search = '';
+  document.getElementById('search').value = '';
+  await loadPage();
+  showToast(`✅ Loaded ${res.rows.toLocaleString()} rows from ${res.filename}`);
+}
+
+function updateBadge(rows) {
+  const badge = document.getElementById('csv-badge');
+  badge.textContent = `${rows.toLocaleString()} properties`;
+  badge.style.background = 'rgba(0,229,160,0.08)';
+  badge.style.borderColor = 'rgba(0,229,160,0.2)';
+  badge.style.color = 'var(--green)';
+  document.getElementById('random-btn').disabled = false;
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+async function loadPage() {
+  setStatus('Loading…');
+  const params = new URLSearchParams({
+    search: state.search,
+    page: state.page,
+    page_size: state.pageSize,
+  });
+  const data = await apiFetch(`/api/properties?${params}`);
+  state.total = data.total;
+  renderTable(data.rows);
+  renderPagination(data.total);
+  const showing = data.rows.length;
+  document.getElementById('row-count').textContent =
+    state.search
+      ? `${data.total.toLocaleString()} matches  ·  showing ${showing}`
+      : `${data.total.toLocaleString()} properties  ·  showing ${showing}`;
+  setStatus(`Loaded page ${state.page}`);
+}
+
+function renderTable(rows) {
+  const wrap = document.getElementById('table-wrap');
+  if (!rows.length) {
+    wrap.innerHTML = '<div class="empty-state">No matching properties</div>';
+    return;
+  }
+
+  const cols = ['locality', 'postcode', 'street', 'ptype', 'pred_p50'];
+  let html = `<table><thead><tr>
+    <th>Suburb</th><th>PC</th><th>Street</th><th>Type</th><th>Model Mid</th>
+  </tr></thead><tbody>`;
+
+  for (const row of rows) {
+    const selected = row._idx === state.currentIdx ? 'selected' : '';
+    const ptypeCls = ptypeClass(row.ptype);
+    const p50 = formatPrice(row.pred_p50);
+    html += `<tr class="${selected}" onclick="selectRow(${row._idx})" data-idx="${row._idx}">
+      <td title="${row._address}">${row.locality || '—'}</td>
+      <td>${row.postcode || '—'}</td>
+      <td>${row.street || '—'} ${row.streetTypeCode || ''}</td>
+      <td><span class="ptype-badge ${ptypeCls}">${row.ptype || '?'}</span></td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--accent)">${p50}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function ptypeClass(ptype) {
+  const t = (ptype || '').toLowerCase();
+  if (t.includes('house') || t === 'h') return 'ptype-house';
+  if (t.includes('unit') || t === 'u') return 'ptype-unit';
+  return 'ptype-land';
+}
+
+function renderPagination(total) {
+  const pages = Math.ceil(total / state.pageSize);
+  const pg = document.getElementById('pagination');
+  if (pages <= 1) { pg.style.display = 'none'; return; }
+  pg.style.display = 'flex';
+  document.getElementById('prev-btn').disabled = state.page <= 1;
+  document.getElementById('next-btn').disabled = state.page >= pages;
+  document.getElementById('page-info').textContent = `${state.page} / ${pages}`;
+}
+
+function changePage(dir) {
+  state.page += dir;
+  loadPage();
+}
+
+// ── Property selection ────────────────────────────────────────────────────────
+async function selectRow(idx) {
+  state.currentIdx = idx;
+  // Update table highlight
+  document.querySelectorAll('tr').forEach(tr => {
+    tr.classList.toggle('selected', +tr.dataset.idx === idx);
+  });
+
+  const row = await apiFetch(`/api/property/${idx}`);
+  state.currentRow = row;
+  showDetail(row);
+}
+
+function showDetail(row) {
+  document.getElementById('no-selection').style.display = 'none';
+  const dv = document.getElementById('detail-view');
+  dv.style.display = 'flex';
+
+  document.getElementById('address-line').textContent = row._address;
+  const link = document.getElementById('oth-link');
+  link.href = row._url;
+  link.textContent = row._url;
+
+  document.getElementById('stat-p10').textContent  = formatPrice(row.pred_p10);
+  document.getElementById('stat-p50').textContent  = formatPrice(row.pred_p50);
+  document.getElementById('stat-p90').textContent  = formatPrice(row.pred_p90);
+  document.getElementById('stat-ptype').textContent = row.ptype || '—';
+  document.getElementById('stat-seg').textContent   = row.segment_used || '—';
+
+  // Reset OTH bar
+  document.getElementById('oth-value').textContent = '—';
+  document.getElementById('oth-value').style.color = 'var(--bright)';
+  document.getElementById('oth-diff').textContent = '—';
+  document.getElementById('oth-diff').className = 'oth-diff';
+  document.getElementById('oth-badge').style.display = 'none';
+  document.getElementById('oth-source-label').textContent = 'OTH Estimate';
+  document.getElementById('fetch-btn').disabled = false;
+
+  // Reset chart
+  document.getElementById('chart').style.display = 'none';
+  document.getElementById('chart-placeholder').style.display = 'flex';
+
+  setStatus(`Selected: ${row._address}`);
+}
+
+// ── Random pick ───────────────────────────────────────────────────────────────
+async function pickRandom() {
+  const row = await apiFetch(`/api/random?search=${encodeURIComponent(state.search)}`);
+  state.currentIdx = row._idx;
+  state.currentRow = row;
+  document.querySelectorAll('tr').forEach(tr => {
+    tr.classList.toggle('selected', +tr.dataset.idx === row._idx);
+  });
+  showDetail(row);
+  showToast(`🎲 ${row._address}`);
+}
+
+// ── Fetch OTH ─────────────────────────────────────────────────────────────────
+async function fetchOTH() {
+  if (!state.currentRow || state.scraping) return;
+  state.scraping = true;
+
+  const btn = document.getElementById('fetch-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Fetching…';
+  setStatus('Launching browser and scraping OnTheHouse…');
+
+  try {
+    const apiKey = document.getElementById('api-key').value.trim();
+    const res = await apiFetch('/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idx: state.currentIdx, anthropic_key: apiKey }),
+    });
+
+    const row = state.currentRow;
+    const p10 = +row.pred_p10;
+    const p50 = +row.pred_p50;
+    const p90 = +row.pred_p90;
+
+    const hasPrice = res.price_lo !== null && res.price_lo !== undefined;
+    const lo = hasPrice ? res.price_lo : null;
+    const hi = hasPrice ? res.price_hi : null;
+    const mid = hasPrice ? (lo + hi) / 2 : null;
+
+    // Source badge
+    const sourceLabels = {
+      estimate: 'OTH Estimate',
+      for_sale: 'For Sale',
+      sold:     'Last Sold',
+      vision:   'Vision AI',
+    };
+    const sourceBadgeClasses = {
+      estimate: 'badge-estimate',
+      for_sale: 'badge-for_sale',
+      sold:     'badge-sold',
+      vision:   'badge-vision',
+    };
+
+    document.getElementById('oth-source-label').textContent =
+      sourceLabels[res.source_label] || 'OTH Value';
+
+    const badge = document.getElementById('oth-badge');
+
+    if (hasPrice) {
+      const diffPct = (mid - p50) / p50 * 100;
+      const isClose = Math.abs(diffPct) < 15;
+
+      const priceText = lo === hi
+        ? formatPrice(lo)
+        : `${formatPrice(lo)} – ${formatPrice(hi)}`;
+
+      document.getElementById('oth-value').textContent = priceText;
+      document.getElementById('oth-value').style.color = isClose ? 'var(--green)' : 'var(--red)';
+
+      const diffEl = document.getElementById('oth-diff');
+      diffEl.textContent = `${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%`;
+      diffEl.className = 'oth-diff ' + (diffPct > 0 ? 'positive' : diffPct < 0 ? 'negative' : 'neutral');
+
+      badge.textContent = sourceLabels[res.source_label] || 'OTH';
+      badge.className = 'oth-source-badge ' + (sourceBadgeClasses[res.source_label] || 'badge-estimate');
+      badge.style.display = 'inline-block';
+
+      drawChart(p10, p50, p90, lo, hi, res.source_label);
+      setStatus(`Done — ${priceText} vs Model Mid ${formatPrice(p50)} | Diff: ${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%`);
+    } else {
+      document.getElementById('oth-value').textContent = 'Not found';
+      document.getElementById('oth-value').style.color = 'var(--red)';
+      badge.textContent = 'No data';
+      badge.className = 'oth-source-badge badge-none';
+      badge.style.display = 'inline-block';
+      drawChart(p10, p50, p90, null, null, null);
+      setStatus('No estimate found — try opening the URL manually');
+      showToast('⚠️ No price found. Try opening the link directly.');
+    }
+  } catch (e) {
+    setStatus('Scrape error: ' + e.message);
+  } finally {
+    state.scraping = false;
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Fetch OnTheHouse';
+  }
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────────────
+function drawChart(p10, p50, p90, othLo, othHi, sourceLabel) {
+  const placeholder = document.getElementById('chart-placeholder');
+  const canvas = document.getElementById('chart');
+  placeholder.style.display = 'none';
+  canvas.style.display = 'block';
+
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 680;
+  const H = 160;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // Background
+  ctx.fillStyle = '#181c27';
+  ctx.fillRect(0, 0, W, H);
+
+  // Padding
+  const px = 60, py = 20, pw = W - px * 2, barH = 28, cy = H / 2;
+
+  // Value range
+  let allVals = [p10, p90];
+  if (othLo !== null) { allVals.push(othLo, othHi); }
+  const minV = Math.min(...allVals);
+  const maxV = Math.max(...allVals);
+  const span = maxV - minV || 1;
+
+  const xOf = v => px + (v - minV) / span * pw;
+
+  // Grid lines
+  ctx.strokeStyle = '#232736';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const x = px + (pw / 4) * i;
+    ctx.beginPath(); ctx.moveTo(x, py - 6); ctx.lineTo(x, H - py + 6); ctx.stroke();
+    const val = minV + (span / 4) * i;
+    ctx.fillStyle = '#4a5068';
+    ctx.font = '9px Space Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(formatPriceShort(val), x, H - py + 16);
+  }
+
+  // Model band (p10–p90)
+  const bx = xOf(p10), bw = xOf(p90) - xOf(p10);
+  ctx.fillStyle = 'rgba(0,229,255,0.10)';
+  ctx.fillRect(bx, cy - barH, bw, barH * 2);
+
+  // Model band border
+  ctx.strokeStyle = 'rgba(0,229,255,0.25)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx, cy - barH, bw, barH * 2);
+
+  // P10 / P90 ticks
+  drawTick(ctx, xOf(p10), cy - barH, cy + barH, '#4a5068', 1);
+  drawTick(ctx, xOf(p90), cy - barH, cy + barH, '#4a5068', 1);
+
+  // P50 line
+  drawTick(ctx, xOf(p50), cy - barH - 8, cy + barH + 8, '#00e5ff', 2);
+  label(ctx, xOf(p50), cy - barH - 14, 'MID', '#00e5ff');
+
+  // OTH band / line
+  if (othLo !== null) {
+    const othColor = sourceLabel === 'sold' ? '#ff6b35' : sourceLabel === 'for_sale' ? '#00e5a0' : '#b46cff';
+    const mid = (othLo + othHi) / 2;
+    const isClose = Math.abs((mid - p50) / p50) < 0.15;
+    const oc = isClose ? '#00e5a0' : '#ff4d6d';
+
+    if (othLo !== othHi) {
+      // Range band
+      const ox = xOf(othLo), ow = xOf(othHi) - xOf(othLo);
+      ctx.fillStyle = isClose ? 'rgba(0,229,160,0.12)' : 'rgba(255,77,109,0.12)';
+      ctx.fillRect(ox, cy - barH, ow, barH * 2);
+      ctx.strokeStyle = isClose ? 'rgba(0,229,160,0.3)' : 'rgba(255,77,109,0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(ox, cy - barH, ow, barH * 2);
+    }
+
+    drawTick(ctx, xOf(mid), cy - barH - 8, cy + barH + 8, oc, 2.5, [5, 4]);
+    label(ctx, xOf(mid), cy + barH + 22, 'OTH', oc);
+  }
+
+  // Legend
+  const lx = px, ly = py - 4;
+  ctx.fillStyle = 'rgba(0,229,255,0.15)';
+  ctx.fillRect(lx, ly, 10, 10);
+  ctx.fillStyle = '#7c83a0';
+  ctx.font = '9px Space Mono, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Model P10–P90', lx + 14, ly + 8);
+
+  if (othLo !== null) {
+    const mid = (othLo + othHi) / 2;
+    const isClose = Math.abs((mid - p50) / p50) < 0.15;
+    ctx.fillStyle = isClose ? 'rgba(0,229,160,0.15)' : 'rgba(255,77,109,0.15)';
+    ctx.fillRect(lx + 130, ly, 10, 10);
+    ctx.fillStyle = '#7c83a0';
+    ctx.fillText('OTH Range', lx + 144, ly + 8);
+  }
+}
+
+function drawTick(ctx, x, y1, y2, color, lw, dash = []) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw;
+  ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function label(ctx, x, y, text, color) {
+  ctx.fillStyle = color;
+  ctx.font = 'bold 9px Space Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, x, y);
+}
+
+// ── Formatting ────────────────────────────────────────────────────────────────
+function formatPrice(val) {
+  if (val === null || val === undefined || isNaN(+val)) return '—';
+  const n = +val;
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n.toLocaleString()}`;
+}
+
+function formatPriceShort(val) {
+  const n = +val;
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n.toLocaleString()}`;
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function setStatus(msg) {
+  document.getElementById('statusbar').textContent = msg;
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
