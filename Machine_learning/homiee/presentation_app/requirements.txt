@@ -1,6 +1,5 @@
-# requirements.txt
 fastapi
-uvicorn
+uvicorn[standard]
 pandas
 playwright
 anthropic
